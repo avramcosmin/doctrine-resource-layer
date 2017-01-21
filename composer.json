@@ -1,0 +1,24 @@
+{
+    "name": "mindlahus/doctrine-resource-layer",
+    "description": "An abstract class that helps manage relationships with Doctrine and Symfony",
+    "require": {
+        "doctrine/orm": "^2.5",
+        "doctrine/doctrine-bundle": "^1.6",
+        "doctrine/doctrine-cache-bundle": "^1.3",
+        "symfony/symfony": "^3.2",
+        "php": "^7.0",
+        "symfony/monolog-bundle": "^3.0",
+        "erusev/parsedown-extra": "^0.7.1"
+    },
+    "require-dev": {
+        "symfony/phpunit-bridge": "^3.2"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Avram Cosmin",
+            "email": "avram.cosmin@sprindo.com",
+			"homepage": "http://www.sprindo.com"
+        }
+    ]
+}
