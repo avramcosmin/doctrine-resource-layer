@@ -1,5 +1,8 @@
 /*
 !.gitignore
+!ControllerHelper.php
 !EntityHelper.php
-!ExceptionHelper.php
+!EntityRepositoryHelper.php
+!GlobalHelper.php
 !StringHelper.php
+!ThrowableHelper.php

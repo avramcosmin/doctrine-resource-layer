@@ -1,3 +1,5 @@
 /*
-!EntityResource
+!Entity
 !.gitignore
+!CommandTrait.php
+!TestTrait.php

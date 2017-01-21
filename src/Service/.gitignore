@@ -1,4 +1,3 @@
 /*
 !.gitignore
-!ResourceService.php
-!ResponseService.php
+!DownloadService.php
