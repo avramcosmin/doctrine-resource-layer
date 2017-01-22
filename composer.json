@@ -25,5 +25,10 @@
             "email": "avram.cosmin@sprindo.com",
 			"homepage": "http://www.sprindo.com"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "Mindlahus\\": "src/"
+        }
+    }
 }
