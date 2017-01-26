@@ -876,24 +876,22 @@ abstract class ResourceAbstract
                                                          string $otherSideProperty,
                                                          array $options = [])
     {
+        $this->_validate($entity);
         /**
-         * here $otherEntity is the Owning Side Entity
+         * here $otherSideEntity is the Owning Side Entity
          */
-        $otherEntity = $this->getOneBy(
+        $otherSideEntity = $this->getOneBy(
             $thisSideProperty,
             $repository,
             $options
         );
+        $this->_validate($otherSideEntity);
 
-        if (!is_null($otherEntity)) {
-            $this->accessor->setValue($otherEntity, $otherSideProperty, $entity);
-            /**
-             * Let's make this side aware about the changes we made.
-             */
-            $this->accessor->setValue($entity, $thisSideProperty, $otherEntity);
-        } else {
-            $this->logger->error('The inverse failed to set the mapping due to null other side Entity.');
-        }
+        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $entity);
+        /**
+         * Let's make this side aware about the changes we made.
+         */
+        $this->accessor->setValue($entity, $thisSideProperty, $otherSideEntity);
 
         return $entity;
     }
@@ -937,20 +935,22 @@ abstract class ResourceAbstract
                                                         string $otherSideProperty,
                                                         array $options = [])
     {
+        $this->_validate($entity);
         /**
-         * here $otherEntity is the Inverse Side Entity
+         * here $otherSideEntity is the Inverse Side Entity
          */
-        $otherEntity = $this->getOneBy(
+        $otherSideEntity = $this->getOneBy(
             $thisSideProperty,
             $repository,
             $options
         );
+        $this->_validate($otherSideEntity);
 
-        $this->accessor->setValue($entity, $thisSideProperty, $otherEntity);
+        $this->accessor->setValue($entity, $thisSideProperty, $otherSideEntity);
         /**
          * Let's make the inverse side aware about the changes we made in here
          */
-        $this->accessor->setValue($otherEntity, $otherSideProperty, $entity);
+        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $entity);
 
         return $entity;
     }
@@ -1018,7 +1018,7 @@ abstract class ResourceAbstract
             if (filter_var($entity, FILTER_VALIDATE_INT)) {
                 return $filteredEntities[] = $entity;
             }
-            
+
             if ($this->accessor->isReadable($entity, 'id')) {
                 $filteredEntities[] = $this->accessor->getValue($entity, 'id');
             }
