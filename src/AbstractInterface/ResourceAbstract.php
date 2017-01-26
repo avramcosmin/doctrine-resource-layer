@@ -1019,8 +1019,8 @@ abstract class ResourceAbstract
                 return $filteredEntities[] = $entity;
             }
 
-            if (is_object($entity) && method_exists($entity, 'getId')) {
-                $filteredEntities[] = $entity->getId();
+            if ($this->accessor->isReadable($entity, 'id')) {
+                $filteredEntities[] = $this->accessor->getValue($entity, 'id');
             }
         }
 
