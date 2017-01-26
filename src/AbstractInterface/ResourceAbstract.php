@@ -492,7 +492,7 @@ abstract class ResourceAbstract
     {
         $this->_validate($entity);
 
-        $val = $this->_getValue($entity, $propertyPath);
+        $val = $this->getAccessor()->getValue($entity, $propertyPath);
 
         if (!is_bool($val) && !is_null($val)) {
             $this->logger->error('Negation can only be used on boolean type properties.');
@@ -1127,7 +1127,7 @@ abstract class ResourceAbstract
          * NO need to call the remover on the inverse side.
          * We will later call the setter and this overwrites all associations.
          */
-        foreach ($this->_getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
+        foreach ($this->getAccessor()->getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, null);
         }
 
