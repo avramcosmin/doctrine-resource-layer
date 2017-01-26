@@ -108,6 +108,20 @@ abstract class ResourceAbstract
     }
 
     /**
+     * @param $entity
+     * @param $propertyPath
+     * @return mixed|null
+     */
+    protected function _getValue($entity, $propertyPath)
+    {
+        if (!$this->accessor->isReadable($entity, $propertyPath)) {
+            return null;
+        }
+
+        return $this->accessor->getValue($entity, $propertyPath);
+    }
+
+    /**
      * http://symfony.com/doc/current/components/property_access.html
      *
      * $options = [
@@ -139,10 +153,10 @@ abstract class ResourceAbstract
                 return null;
             }
 
-            return $this->accessor->getValue($options['useValue'], $propertyPath);
+            return $this->_getValue($options['useValue'], $propertyPath);
         }
 
-        return $this->accessor->getValue($this->requestContent, $propertyPath);
+        return $this->_getValue($this->requestContent, $propertyPath);
     }
 
     /**
@@ -478,7 +492,7 @@ abstract class ResourceAbstract
     {
         $this->_validate($entity);
 
-        $val = $this->accessor->getValue($entity, $propertyPath);
+        $val = $this->_getValue($entity, $propertyPath);
 
         if (!is_bool($val) && !is_null($val)) {
             $this->logger->error('Negation can only be used on boolean type properties.');
@@ -1113,7 +1127,7 @@ abstract class ResourceAbstract
          * NO need to call the remover on the inverse side.
          * We will later call the setter and this overwrites all associations.
          */
-        foreach ($this->accessor->getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
+        foreach ($this->_getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, null);
         }
 
