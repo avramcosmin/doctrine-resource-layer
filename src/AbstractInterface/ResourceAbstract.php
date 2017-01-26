@@ -108,6 +108,20 @@ abstract class ResourceAbstract
     }
 
     /**
+     * @param $entity
+     * @param $propertyPath
+     * @return mixed|null
+     */
+    protected function _getValue($entity, $propertyPath)
+    {
+        if (!$this->accessor->isReadable($entity, $propertyPath)) {
+            return null;
+        }
+
+        return $this->accessor->getValue($entity, $propertyPath);
+    }
+
+    /**
      * http://symfony.com/doc/current/components/property_access.html
      *
      * $options = [
@@ -139,10 +153,10 @@ abstract class ResourceAbstract
                 return null;
             }
 
-            return $this->accessor->getValue($options['useValue'], $propertyPath);
+            return $this->_getValue($options['useValue'], $propertyPath);
         }
 
-        return $this->accessor->getValue($this->requestContent, $propertyPath);
+        return $this->_getValue($this->requestContent, $propertyPath);
     }
 
     /**
@@ -478,7 +492,7 @@ abstract class ResourceAbstract
     {
         $this->_validate($entity);
 
-        $val = $this->accessor->getValue($entity, $propertyPath);
+        $val = $this->_getValue($entity, $propertyPath);
 
         if (!is_bool($val) && !is_null($val)) {
             $this->logger->error('Negation can only be used on boolean type properties.');
@@ -876,24 +890,22 @@ abstract class ResourceAbstract
                                                          string $otherSideProperty,
                                                          array $options = [])
     {
+        $this->_validate($entity);
         /**
-         * here $otherEntity is the Owning Side Entity
+         * here $otherSideEntity is the Owning Side Entity
          */
-        $otherEntity = $this->getOneBy(
+        $otherSideEntity = $this->getOneBy(
             $thisSideProperty,
             $repository,
             $options
         );
+        $this->_validate($otherSideEntity);
 
-        if (!is_null($otherEntity)) {
-            $this->accessor->setValue($otherEntity, $otherSideProperty, $entity);
-            /**
-             * Let's make this side aware about the changes we made.
-             */
-            $this->accessor->setValue($entity, $thisSideProperty, $otherEntity);
-        } else {
-            $this->logger->error('The inverse failed to set the mapping due to null other side Entity.');
-        }
+        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $entity);
+        /**
+         * Let's make this side aware about the changes we made.
+         */
+        $this->accessor->setValue($entity, $thisSideProperty, $otherSideEntity);
 
         return $entity;
     }
@@ -937,20 +949,22 @@ abstract class ResourceAbstract
                                                         string $otherSideProperty,
                                                         array $options = [])
     {
+        $this->_validate($entity);
         /**
-         * here $otherEntity is the Inverse Side Entity
+         * here $otherSideEntity is the Inverse Side Entity
          */
-        $otherEntity = $this->getOneBy(
+        $otherSideEntity = $this->getOneBy(
             $thisSideProperty,
             $repository,
             $options
         );
+        $this->_validate($otherSideEntity);
 
-        $this->accessor->setValue($entity, $thisSideProperty, $otherEntity);
+        $this->accessor->setValue($entity, $thisSideProperty, $otherSideEntity);
         /**
          * Let's make the inverse side aware about the changes we made in here
          */
-        $this->accessor->setValue($otherEntity, $otherSideProperty, $entity);
+        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $entity);
 
         return $entity;
     }
@@ -1113,7 +1127,7 @@ abstract class ResourceAbstract
          * NO need to call the remover on the inverse side.
          * We will later call the setter and this overwrites all associations.
          */
-        foreach ($this->accessor->getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
+        foreach ($this->_getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, null);
         }
 
