@@ -3,7 +3,7 @@
 namespace Mindlahus\AbstractInterface;
 
 use Doctrine\Common\Persistence\ObjectManager;
-use Mindlahus\SimfonyAssets\Helper\GlobalHelper;
+use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
 use Mindlahus\SymfonyAssets\Helper\StringHelper;
 use Mindlahus\SymfonyAssets\Helper\ThrowableHelper;
 use Symfony\Bridge\Monolog\Logger;
