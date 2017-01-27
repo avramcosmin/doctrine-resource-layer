@@ -3,9 +3,9 @@
 namespace Mindlahus\AbstractInterface;
 
 use Doctrine\Common\Persistence\ObjectManager;
-use Mindlahus\Helper\GlobalHelper;
-use Mindlahus\Helper\StringHelper;
-use Mindlahus\Helper\ThrowableHelper;
+use Mindlahus\SimfonyAssets\Helper\GlobalHelper;
+use Mindlahus\SymfonyAssets\Helper\StringHelper;
+use Mindlahus\SymfonyAssets\Helper\ThrowableHelper;
 use Symfony\Bridge\Monolog\Logger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyAccess\PropertyAccess;
