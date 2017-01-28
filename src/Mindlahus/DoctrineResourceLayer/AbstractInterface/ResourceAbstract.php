@@ -1,6 +1,6 @@
 <?php
 
-namespace Mindlahus\AbstractInterface;
+namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
 
 use Doctrine\Common\Persistence\ObjectManager;
 use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
