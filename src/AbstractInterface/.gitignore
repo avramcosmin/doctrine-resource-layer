@@ -1,6 +1,3 @@
 /*
 !.gitignore
-!ControlFieldInterface.php
-!DownloadAbstract.php
-!NameInterface.php
 !ResourceAbstract.php

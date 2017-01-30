@@ -1,11 +1,11 @@
 <?php
 
-namespace Mindlahus\AbstractInterface;
+namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
 
-use Mindlahus\Helper\GlobalHelper;
-use Mindlahus\Helper\StringHelper;
-use Mindlahus\Helper\ThrowableHelper;
 use Doctrine\Common\Persistence\ObjectManager;
+use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
+use Mindlahus\SymfonyAssets\Helper\StringHelper;
+use Mindlahus\SymfonyAssets\Helper\ThrowableHelper;
 use Symfony\Bridge\Monolog\Logger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -492,7 +492,7 @@ abstract class ResourceAbstract
     {
         $this->_validate($entity);
 
-        $val = $this->_getValue($entity, $propertyPath);
+        $val = $this->getAccessor()->getValue($entity, $propertyPath);
 
         if (!is_bool($val) && !is_null($val)) {
             $this->logger->error('Negation can only be used on boolean type properties.');
@@ -725,19 +725,19 @@ abstract class ResourceAbstract
      * Country is the inverse side (other side).
      * $options['useValue'], $repository & $thisSideProperty refer to Country.
      *
-     * @param $entity
+     * @param $thisSideEntity
      * @param string $thisSideProperty Reference to the other side
      * @param string $repository Path to the other's side repository
      * @param array $options
      * @return mixed
      * @throws \Throwable
      */
-    public function setManyToOneUnidirectional($entity,
+    public function setManyToOneUnidirectional($thisSideEntity,
                                                string $thisSideProperty,
                                                string $repository,
                                                array $options = [])
     {
-        return $this->setOneToOneUnidirectional($entity, $thisSideProperty, $repository, $options);
+        return $this->setOneToOneUnidirectional($thisSideEntity, $thisSideProperty, $repository, $options);
     }
 
     /**
@@ -769,26 +769,26 @@ abstract class ResourceAbstract
      *
      * There is NO Inverse Side
      *
-     * @param $entity
+     * @param $thisSideEntity
      * @param string $thisSideProperty Reference to the other side
      * @param string $repository Path to the other's side repository
      * @param array $options
      * @return mixed
      */
-    public function setOneToOneUnidirectional($entity,
+    public function setOneToOneUnidirectional($thisSideEntity,
                                               string $thisSideProperty,
                                               string $repository,
                                               array $options = [])
     {
-        $this->_validate($entity);
+        $this->_validate($thisSideEntity);
 
         $this->accessor->setValue(
-            $entity,
+            $thisSideEntity,
             $thisSideProperty,
             $this->getOneBy($thisSideProperty, $repository, $options)
         );
 
-        return $entity;
+        return $thisSideEntity;
     }
 
     /**
@@ -877,20 +877,20 @@ abstract class ResourceAbstract
      * Changes made only to the inverse side of an association are ignored.
      *
      *
-     * @param $entity
+     * @param $thisSideEntity
      * @param string $thisSideProperty Reference to the other side
      * @param string $repository Path to the other's side repository
      * @param string $otherSideProperty Reference to this side
      * @param array $options
      * @return mixed
      */
-    public function inverseSideSetsOneToOneBidirectional($entity,
+    public function inverseSideSetsOneToOneBidirectional($thisSideEntity,
                                                          string $thisSideProperty,
                                                          string $repository,
                                                          string $otherSideProperty,
                                                          array $options = [])
     {
-        $this->_validate($entity);
+        $this->_validate($thisSideEntity);
         /**
          * here $otherSideEntity is the Owning Side Entity
          */
@@ -901,13 +901,13 @@ abstract class ResourceAbstract
         );
         $this->_validate($otherSideEntity);
 
-        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $entity);
+        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
         /**
          * Let's make this side aware about the changes we made.
          */
-        $this->accessor->setValue($entity, $thisSideProperty, $otherSideEntity);
+        $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
 
-        return $entity;
+        return $thisSideEntity;
     }
 
     /**
@@ -936,20 +936,20 @@ abstract class ResourceAbstract
      *
      * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity (The Owner)
      *
-     * @param $entity
+     * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
      * @param string $otherSideProperty
      * @param array $options
      * @return mixed
      */
-    public function owningSideSetsOneToOneBidirectional($entity,
+    public function owningSideSetsOneToOneBidirectional($thisSideEntity,
                                                         string $thisSideProperty,
                                                         string $repository,
                                                         string $otherSideProperty,
                                                         array $options = [])
     {
-        $this->_validate($entity);
+        $this->_validate($thisSideEntity);
         /**
          * here $otherSideEntity is the Inverse Side Entity
          */
@@ -960,13 +960,13 @@ abstract class ResourceAbstract
         );
         $this->_validate($otherSideEntity);
 
-        $this->accessor->setValue($entity, $thisSideProperty, $otherSideEntity);
+        $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
         /**
          * Let's make the inverse side aware about the changes we made in here
          */
-        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $entity);
+        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
 
-        return $entity;
+        return $thisSideEntity;
     }
 
     /**
@@ -1070,7 +1070,7 @@ abstract class ResourceAbstract
      *
      * $options['useValue'], $repository & $otherSideEntity refer to the Other Entity (The Owner)
      *
-     * @param $thisSideEntity           mixed       This is the $entity argument of the other methods
+     * @param $thisSideEntity           mixed
      * @param $thisSidePropertyPath     string
      * @param $repository               string
      * @param array $options
@@ -1127,7 +1127,7 @@ abstract class ResourceAbstract
          * NO need to call the remover on the inverse side.
          * We will later call the setter and this overwrites all associations.
          */
-        foreach ($this->_getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
+        foreach ($this->getAccessor()->getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, null);
         }
 
@@ -1217,7 +1217,8 @@ abstract class ResourceAbstract
         return $thisSideEntity;
     }
 
-    /**http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
+    /**
+     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
      *
      * Identical to $this->addOneToManyUnidirectional()
      * Helps to batch process associations using the adder
