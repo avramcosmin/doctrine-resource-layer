@@ -978,23 +978,23 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param $thisSidePropertyPath
      * @param string $repository
-     * @param array $entities Array of numbers is searching by column `id`
+     * @param array $otherSideEntities Array of numbers is searching by column `id`
      * @param array $options
      * @return mixed
      */
     public function inverseSideBatchAddsOneToManyBidirectional($thisSideEntity,
                                                                $thisSidePropertyPath,
                                                                string $repository,
-                                                               array $entities,
+                                                               array $otherSideEntities,
                                                                array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->inverseSideAddsOneToManyBidirectional(
                 $thisSideEntity,
                 $thisSidePropertyPath,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
@@ -1110,14 +1110,14 @@ abstract class ResourceAbstract
      * @param string $thisSideProperty
      * @param string $repository
      * @param string $otherSideProperty
-     * @param array $entities
+     * @param array $otherSideEntities
      * @return mixed
      */
     public function inverseSideSetsOneToManyBidirectional($thisSideEntity,
                                                           string $thisSideProperty,
                                                           string $repository,
                                                           string $otherSideProperty,
-                                                          array $entities)
+                                                          array $otherSideEntities)
     {
         $this->_validate($thisSideEntity);
 
@@ -1131,30 +1131,17 @@ abstract class ResourceAbstract
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, null);
         }
 
-        /**
-         * persist new associations
-         */
-        $filteredEntities = [];
-        foreach ($entities as $otherSideEntity) {
-            // keep the id's
-            if (is_object($otherSideEntity) && method_exists($otherSideEntity, 'getId')) {
-                $filteredEntities[] = $otherSideEntity->getId();
-            } elseif (is_numeric($otherSideEntity)) {
-                $filteredEntities[] = $otherSideEntity;
-            }
-        }
-
-        $entities = $this->getManyById($repository, $filteredEntities);
+        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
 
         // set the associations
         $this->accessor->setValue(
             $thisSideEntity,
             $thisSideProperty,
-            $entities
+            $otherSideEntities
         );
 
         // make the owning side aware of the changes
-        foreach ($entities as $otherSideEntity) {
+        foreach ($otherSideEntities as $otherSideEntity) {
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
         }
 
@@ -1228,22 +1215,22 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities Array of numbers; this searches by column `id`
+     * @param array $otherSideEntities Array of numbers; this searches by column `id`
      * @param array $options
      */
     public function batchAddOneToManyUnidirectional($thisSideEntity,
                                                     string $thisSideProperty,
                                                     string $repository,
-                                                    array $entities,
+                                                    array $otherSideEntities,
                                                     array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->addOneToManyUnidirectional(
                 $thisSideEntity,
                 $thisSideProperty,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
@@ -1296,23 +1283,23 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @return mixed
      */
     public function setOneToManyUnidirectional($thisSideEntity,
                                                string $thisSideProperty,
                                                string $repository,
-                                               array $entities)
+                                               array $otherSideEntities)
     {
         $this->_validate($thisSideEntity);
 
-        $entities = $this->getManyById($repository, $entities);
+        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
 
         // set the associations
         $this->accessor->setValue(
             $thisSideEntity,
             $thisSideProperty,
-            $entities
+            $otherSideEntities
         );
 
         return $thisSideEntity;
@@ -1327,22 +1314,22 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @param array $options
      */
     public function batchAddManyToManyBidirectional($thisSideEntity,
                                                     string $thisSideProperty,
                                                     string $repository,
-                                                    array $entities,
+                                                    array $otherSideEntities,
                                                     array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->addManyToManyBidirectional(
                 $thisSideEntity,
                 $thisSideProperty,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
@@ -1412,19 +1399,19 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @param array $options
      * @return mixed
      */
     public function setManyToManyBidirectional($thisSideEntity,
                                                string $thisSideProperty,
                                                string $repository,
-                                               array $entities,
+                                               array $otherSideEntities,
                                                array $options = [])
     {
         $this->_validate($thisSideEntity);
 
-        $entities = $this->getManyById($repository, $entities);
+        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
 
         /**
          * remove all current associations
@@ -1441,11 +1428,11 @@ abstract class ResourceAbstract
         $this->accessor->setValue(
             $thisSideEntity,
             $thisSideProperty,
-            $entities
+            $otherSideEntities
         );
 
         // let make aware the other side about the update
-        foreach ($entities as $otherSideEntity) {
+        foreach ($otherSideEntities as $otherSideEntity) {
             $otherSideEntity->{$options['otherSideAdder']}($thisSideEntity);
         }
 
@@ -1461,22 +1448,22 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @param array $options
      */
     public function batchRemoveAssociations($thisSideEntity,
                                             string $thisSideProperty,
                                             string $repository,
-                                            array $entities,
+                                            array $otherSideEntities,
                                             array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->removeAssociation(
                 $thisSideEntity,
                 $thisSideProperty,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
