@@ -1205,6 +1205,38 @@ abstract class ResourceAbstract
     }
 
     /**
+     * @param $thisSideEntity
+     * @param string $thisSideProperty
+     * @param string $repository
+     * @param string $otherSideAdder
+     * @param array $options
+     * @return mixed
+     */
+    public function owningSideSetsOneToManyBidirectionalOrNull($thisSideEntity,
+                                                               string $thisSideProperty,
+                                                               string $repository,
+                                                               string $otherSideAdder,
+                                                               array $options = [])
+    {
+        $this->_validate($thisSideEntity);
+
+        $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
+        if (!$otherSideEntity) {
+            $this->accessor->setValue($thisSideEntity, $thisSideProperty, null);
+            return $thisSideEntity;
+        }
+
+        $options['entity'] = $options['entity'] ?? $otherSideEntity;
+        return $this->owningSideSetsOneToManyBidirectional(
+            $thisSideEntity,
+            $thisSideProperty,
+            $repository,
+            $otherSideAdder,
+            $options
+        );
+    }
+
+    /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
      *
      * Identical to $this->addOneToManyUnidirectional()
