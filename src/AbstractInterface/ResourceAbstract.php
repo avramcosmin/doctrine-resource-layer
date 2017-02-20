@@ -161,6 +161,90 @@ abstract class ResourceAbstract
 
     /**
      * $options = [
+     *  entity  optional    Doctrine Entity
+     *  findBy  optional    string              Defaults to the column name `id`
+     *
+     *  ...used by ThrowableHelper::NotInstanceOf
+     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
+     *
+     *  ...used by $this->getFromJSON()
+     *  propertyPath    optional    string
+     *  useValue        optional    mixed
+     *  forceReturn     optional    boolean
+     * ]
+     *
+     * @param string $propertyPath
+     * @param string $repository
+     * @param array $options
+     * @return mixed
+     */
+    public function getOneBy(string $propertyPath, string $repository, array $options = [])
+    {
+        $options = array_merge([
+            'findBy' => 'id'
+        ], $options);
+
+        if (!array_key_exists('entity', $options)) {
+            $options['useValue'] = $this->entityManager
+                ->getRepository($repository)
+                ->findOneBy([
+                    $options['findBy'] => $this->getFromJSON($propertyPath, $options)
+                ]);
+        } else {
+            $options['useValue'] = $options['entity'];
+        }
+
+        if (!is_null($options['useValue']) && !GlobalHelper::isInstanceOf(
+                $options['useValue'],
+                $options['instanceOf'])
+        ) {
+            ThrowableHelper::NotInstanceOf($options['useValue'], $options['instanceOf']);
+        }
+
+        return $options['useValue'];
+    }
+
+    /**
+     * @param string $repository
+     * @param array $entities
+     * @param string $col
+     * @return array
+     */
+    public function getManyBy(string $repository, array $entities, $col = 'id')
+    {
+        return $this->entityManager
+            ->getRepository($repository)
+            ->findBy([
+                $col => $this->_filterEntities($entities)
+            ]);
+    }
+
+    /**
+     * Filters an array of entities and returns an array of id's
+     * This will receive either integers or objects that should represent an instance of the same Entity.
+     *
+     * @param $entities
+     * @return array
+     */
+    protected function _filterEntities($entities)
+    {
+        $filteredEntities = [];
+
+        foreach ($entities as $entity) {
+            if (filter_var($entity, FILTER_VALIDATE_INT)) {
+                return $filteredEntities[] = $entity;
+            }
+
+            if ($this->accessor->isReadable($entity, 'id')) {
+                $filteredEntities[] = $this->accessor->getValue($entity, 'id');
+            }
+        }
+
+        return $filteredEntities;
+    }
+
+    /**
+     * $options = [
      *  ...used by $this->getFromJSON()
      *  propertyPath    optional    string
      *  useValue        optional    mixed
@@ -792,51 +876,6 @@ abstract class ResourceAbstract
     }
 
     /**
-     * $options = [
-     *  entity  optional    Doctrine Entity
-     *  findBy  optional    string              Defaults to the column name `id`
-     *
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
-     *
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
-     * @param string $propertyPath
-     * @param string $repository
-     * @param array $options
-     * @return mixed
-     */
-    public function getOneBy(string $propertyPath, string $repository, array $options = [])
-    {
-        $options = array_merge([
-            'findBy' => 'id'
-        ], $options);
-
-        if (!array_key_exists('entity', $options)) {
-            $options['useValue'] = $this->entityManager
-                ->getRepository($repository)
-                ->findOneBy([
-                    $options['findBy'] => $this->getFromJSON($propertyPath, $options)
-                ]);
-        } else {
-            $options['useValue'] = $options['entity'];
-        }
-
-        if (!is_null($options['useValue']) && !GlobalHelper::isInstanceOf(
-                $options['useValue'],
-                $options['instanceOf'])
-        ) {
-            ThrowableHelper::NotInstanceOf($options['useValue'], $options['instanceOf']);
-        }
-
-        return $options['useValue'];
-    }
-
-    /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-bidirectional
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/unitofwork-associations.html
      *
@@ -876,11 +915,10 @@ abstract class ResourceAbstract
      * Doctrine will only check the owning side of an association for changes.
      * Changes made only to the inverse side of an association are ignored.
      *
-     *
      * @param $thisSideEntity
-     * @param string $thisSideProperty Reference to the other side
-     * @param string $repository Path to the other's side repository
-     * @param string $otherSideProperty Reference to this side
+     * @param string $thisSideProperty
+     * @param string $repository
+     * @param string $otherSideProperty
      * @param array $options
      * @return mixed
      */
@@ -891,6 +929,16 @@ abstract class ResourceAbstract
                                                          array $options = [])
     {
         $this->_validate($thisSideEntity);
+
+        /**
+         * If the entity allows the association to be null and there is an old association
+         * then, set this to null. Later the owner will become the `new` Other Side Entity.
+         */
+        $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
+        if ($oldOtherSideEntity) {
+            $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
+        }
+
         /**
          * here $otherSideEntity is the Owning Side Entity
          */
@@ -901,13 +949,71 @@ abstract class ResourceAbstract
         );
         $this->_validate($otherSideEntity);
 
+        /**
+         * Let's make the OLD inverse side of the owning side aware about the changes we made in here
+         */
+        $oldInverseAssociation = $this->accessor->getValue($otherSideEntity, $otherSideProperty);
+        if ($oldInverseAssociation) {
+            $this->accessor->setValue($oldInverseAssociation, $thisSideProperty, null);
+        }
+
         $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
+
         /**
          * Let's make this side aware about the changes we made.
          */
         $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
 
         return $thisSideEntity;
+    }
+
+    /**
+     * @param $thisSideEntity
+     * @param string $thisSideProperty
+     * @param string $repository
+     * @param string $otherSideProperty
+     * @param array $options
+     * @return mixed
+     */
+    public function inverseSideSetsOneToOneBidirectionalOrNull($thisSideEntity,
+                                                               string $thisSideProperty,
+                                                               string $repository,
+                                                               string $otherSideProperty,
+                                                               array $options = [])
+    {
+        $this->_validate($thisSideEntity);
+
+        /**
+         * here $otherSideEntity is the Owning Side Entity
+         */
+        $otherSideEntity = $this->getOneBy(
+            $thisSideProperty,
+            $repository,
+            $options
+        );
+
+        /**
+         * This is the case when the inverse becomes an orphan
+         */
+        if (!$otherSideEntity) {
+            $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
+            if ($oldOtherSideEntity) {
+                $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
+            }
+
+            $this->accessor->setValue($thisSideEntity, $thisSideProperty, null);
+
+            return $thisSideEntity;
+        }
+
+        $options['entity'] = $options['entity'] ?? $otherSideEntity;
+        return $this->inverseSideSetsOneToOneBidirectional(
+            $thisSideEntity,
+            $thisSideProperty,
+            $repository,
+            $otherSideProperty,
+            $options
+        );
     }
 
     /**
@@ -960,6 +1066,14 @@ abstract class ResourceAbstract
         );
         $this->_validate($otherSideEntity);
 
+        /**
+         * Let's make the OLD inverse side aware about the changes we made in here
+         */
+        $oldInverseAssociation = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
+        if ($oldInverseAssociation) {
+            $this->accessor->setValue($oldInverseAssociation, $otherSideProperty, null);
+        }
+
         $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
         /**
          * Let's make the inverse side aware about the changes we made in here
@@ -967,6 +1081,54 @@ abstract class ResourceAbstract
         $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
 
         return $thisSideEntity;
+    }
+
+    /**
+     * @param $thisSideEntity
+     * @param string $thisSideProperty
+     * @param string $repository
+     * @param string $otherSideProperty
+     * @param array $options
+     * @return mixed
+     */
+    public function owningSideSetsOneToOneBidirectionalOrNull($thisSideEntity,
+                                                              string $thisSideProperty,
+                                                              string $repository,
+                                                              string $otherSideProperty,
+                                                              array $options = [])
+    {
+        $this->_validate($thisSideEntity);
+        /**
+         * here $otherSideEntity is the Inverse Side Entity
+         */
+        $otherSideEntity = $this->getOneBy(
+            $thisSideProperty,
+            $repository,
+            $options
+        );
+
+        /**
+         * If no association is set
+         */
+        if (!$otherSideEntity) {
+            $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
+            if ($oldOtherSideEntity) {
+                $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
+            }
+
+            $this->accessor->setValue($thisSideEntity, $thisSideProperty, null);
+
+            return $thisSideEntity;
+        }
+
+        $options['entity'] = $options['entity'] ?? $otherSideEntity;
+        return $this->owningSideSetsOneToOneBidirectional(
+            $thisSideEntity,
+            $thisSideProperty,
+            $repository,
+            $otherSideProperty,
+            $options
+        );
     }
 
     /**
@@ -978,67 +1140,28 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param $thisSidePropertyPath
      * @param string $repository
-     * @param array $entities Array of numbers is searching by column `id`
+     * @param array $otherSideEntities Array of numbers is searching by column `id`
      * @param array $options
      * @return mixed
      */
     public function inverseSideBatchAddsOneToManyBidirectional($thisSideEntity,
                                                                $thisSidePropertyPath,
                                                                string $repository,
-                                                               array $entities,
+                                                               array $otherSideEntities,
                                                                array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->inverseSideAddsOneToManyBidirectional(
                 $thisSideEntity,
                 $thisSidePropertyPath,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
 
         return $thisSideEntity;
-    }
-
-    /**
-     * @param string $repository
-     * @param array $entities
-     * @param string $col
-     * @return array
-     */
-    public function getManyBy(string $repository, array $entities, $col = 'id')
-    {
-        return $this->entityManager
-            ->getRepository($repository)
-            ->findBy([
-                $col => $this->_filterEntities($entities)
-            ]);
-    }
-
-    /**
-     * Filters an array of entities and returns an array of id's
-     * This will receive either integers or objects that should represent an instance of the same Entity.
-     *
-     * @param $entities
-     * @return array
-     */
-    protected function _filterEntities($entities)
-    {
-        $filteredEntities = [];
-
-        foreach ($entities as $entity) {
-            if (filter_var($entity, FILTER_VALIDATE_INT)) {
-                return $filteredEntities[] = $entity;
-            }
-
-            if ($this->accessor->isReadable($entity, 'id')) {
-                $filteredEntities[] = $this->accessor->getValue($entity, 'id');
-            }
-        }
-
-        return $filteredEntities;
     }
 
     /**
@@ -1110,14 +1233,14 @@ abstract class ResourceAbstract
      * @param string $thisSideProperty
      * @param string $repository
      * @param string $otherSideProperty
-     * @param array $entities
+     * @param array $otherSideEntities
      * @return mixed
      */
     public function inverseSideSetsOneToManyBidirectional($thisSideEntity,
                                                           string $thisSideProperty,
                                                           string $repository,
                                                           string $otherSideProperty,
-                                                          array $entities)
+                                                          array $otherSideEntities)
     {
         $this->_validate($thisSideEntity);
 
@@ -1131,30 +1254,17 @@ abstract class ResourceAbstract
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, null);
         }
 
-        /**
-         * persist new associations
-         */
-        $filteredEntities = [];
-        foreach ($entities as $otherSideEntity) {
-            // keep the id's
-            if (is_object($otherSideEntity) && method_exists($otherSideEntity, 'getId')) {
-                $filteredEntities[] = $otherSideEntity->getId();
-            } elseif (is_numeric($otherSideEntity)) {
-                $filteredEntities[] = $otherSideEntity;
-            }
-        }
-
-        $entities = $this->getManyById($repository, $filteredEntities);
+        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
 
         // set the associations
         $this->accessor->setValue(
             $thisSideEntity,
             $thisSideProperty,
-            $entities
+            $otherSideEntities
         );
 
         // make the owning side aware of the changes
-        foreach ($entities as $otherSideEntity) {
+        foreach ($otherSideEntities as $otherSideEntity) {
             $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
         }
 
@@ -1194,6 +1304,7 @@ abstract class ResourceAbstract
      * @param string $thisSideProperty
      * @param string $repository
      * @param string $otherSideAdder
+     * @param string $otherSideRemover
      * @param array $options
      * @return mixed
      */
@@ -1201,12 +1312,19 @@ abstract class ResourceAbstract
                                                          string $thisSideProperty,
                                                          string $repository,
                                                          string $otherSideAdder,
+                                                         string $otherSideRemover,
                                                          array $options = [])
     {
         $this->_validate($thisSideEntity);
 
         $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
         $this->_validate($otherSideEntity);
+
+        // remove self from past relationships
+        $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
+        if ($oldOtherSideEntity) {
+            $oldOtherSideEntity->{$otherSideRemover}($thisSideEntity);
+        }
 
         // set the association
         $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
@@ -1215,6 +1333,47 @@ abstract class ResourceAbstract
         $otherSideEntity->{$otherSideAdder}($thisSideEntity);
 
         return $thisSideEntity;
+    }
+
+    /**
+     * @param $thisSideEntity
+     * @param string $thisSideProperty
+     * @param string $repository
+     * @param string $otherSideAdder
+     * @param string $otherSideRemover
+     * @param array $options
+     * @return mixed
+     */
+    public function owningSideSetsOneToManyBidirectionalOrNull($thisSideEntity,
+                                                               string $thisSideProperty,
+                                                               string $repository,
+                                                               string $otherSideAdder,
+                                                               string $otherSideRemover,
+                                                               array $options = [])
+    {
+        $this->_validate($thisSideEntity);
+
+        $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
+        if (!$otherSideEntity) {
+            // remove self from past relationships
+            $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
+            if ($oldOtherSideEntity) {
+                $oldOtherSideEntity->{$otherSideRemover}($thisSideEntity);
+            }
+
+            $this->accessor->setValue($thisSideEntity, $thisSideProperty, null);
+            return $thisSideEntity;
+        }
+
+        $options['entity'] = $options['entity'] ?? $otherSideEntity;
+        return $this->owningSideSetsOneToManyBidirectional(
+            $thisSideEntity,
+            $thisSideProperty,
+            $repository,
+            $otherSideAdder,
+            $otherSideRemover,
+            $options
+        );
     }
 
     /**
@@ -1228,22 +1387,22 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities Array of numbers; this searches by column `id`
+     * @param array $otherSideEntities Array of numbers; this searches by column `id`
      * @param array $options
      */
     public function batchAddOneToManyUnidirectional($thisSideEntity,
                                                     string $thisSideProperty,
                                                     string $repository,
-                                                    array $entities,
+                                                    array $otherSideEntities,
                                                     array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->addOneToManyUnidirectional(
                 $thisSideEntity,
                 $thisSideProperty,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
@@ -1293,26 +1452,28 @@ abstract class ResourceAbstract
      *
      * It is your job to get the entities using $this->getFromJSON()
      *
+     * todo : test that old orphan relationships are managed (removed) by Doctrine. If not, handle them (manually remove).
+     *
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @return mixed
      */
     public function setOneToManyUnidirectional($thisSideEntity,
                                                string $thisSideProperty,
                                                string $repository,
-                                               array $entities)
+                                               array $otherSideEntities)
     {
         $this->_validate($thisSideEntity);
 
-        $entities = $this->getManyById($repository, $entities);
+        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
 
         // set the associations
         $this->accessor->setValue(
             $thisSideEntity,
             $thisSideProperty,
-            $entities
+            $otherSideEntities
         );
 
         return $thisSideEntity;
@@ -1327,22 +1488,22 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @param array $options
      */
     public function batchAddManyToManyBidirectional($thisSideEntity,
                                                     string $thisSideProperty,
                                                     string $repository,
-                                                    array $entities,
+                                                    array $otherSideEntities,
                                                     array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->addManyToManyBidirectional(
                 $thisSideEntity,
                 $thisSideProperty,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
@@ -1412,19 +1573,19 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @param array $options
      * @return mixed
      */
     public function setManyToManyBidirectional($thisSideEntity,
                                                string $thisSideProperty,
                                                string $repository,
-                                               array $entities,
+                                               array $otherSideEntities,
                                                array $options = [])
     {
         $this->_validate($thisSideEntity);
 
-        $entities = $this->getManyById($repository, $entities);
+        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
 
         /**
          * remove all current associations
@@ -1441,11 +1602,11 @@ abstract class ResourceAbstract
         $this->accessor->setValue(
             $thisSideEntity,
             $thisSideProperty,
-            $entities
+            $otherSideEntities
         );
 
         // let make aware the other side about the update
-        foreach ($entities as $otherSideEntity) {
+        foreach ($otherSideEntities as $otherSideEntity) {
             $otherSideEntity->{$options['otherSideAdder']}($thisSideEntity);
         }
 
@@ -1461,22 +1622,22 @@ abstract class ResourceAbstract
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $entities
+     * @param array $otherSideEntities
      * @param array $options
      */
     public function batchRemoveAssociations($thisSideEntity,
                                             string $thisSideProperty,
                                             string $repository,
-                                            array $entities,
+                                            array $otherSideEntities,
                                             array $options = [])
     {
-        foreach ($this->getManyBy($repository, $entities) as $entity) {
+        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->removeAssociation(
                 $thisSideEntity,
                 $thisSideProperty,
                 $repository,
                 array_merge($options, [
-                    'entity' => $entity
+                    'entity' => $otherSideEntity
                 ])
             );
         }
