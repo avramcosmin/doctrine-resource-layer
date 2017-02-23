@@ -477,7 +477,10 @@ abstract class ResourceAbstract
 
         $val = $this->getFromJSON($propertyPath, $options);
 
-        if (empty($val)) {
+        /**
+         * !is_numeric() fixes the empty(0) === true
+         */
+        if (empty($val) && !is_numeric($val)) {
             $val = null;
         }
 
@@ -931,15 +934,6 @@ abstract class ResourceAbstract
         $this->_validate($thisSideEntity);
 
         /**
-         * If the entity allows the association to be null and there is an old association
-         * then, set this to null. Later the owner will become the `new` Other Side Entity.
-         */
-        $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-        if ($oldOtherSideEntity) {
-            $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
-        }
-
-        /**
          * here $otherSideEntity is the Owning Side Entity
          */
         $otherSideEntity = $this->getOneBy(
@@ -950,10 +944,23 @@ abstract class ResourceAbstract
         $this->_validate($otherSideEntity);
 
         /**
+         * If the entity allows the association to be null and there is an old association
+         * then, set this to null. Later the owner will become the `new` Other Side Entity.
+         *
+         * In case we try to set from both directions in the same time, they mutually exclude themselves
+         */
+        $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
+        if ($oldOtherSideEntity && $oldOtherSideEntity != $otherSideEntity) {
+            $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
+        }
+
+        /**
          * Let's make the OLD inverse side of the owning side aware about the changes we made in here
+         *
+         * In case we try to set from both directions in the same time, they mutually exclude themselves
          */
         $oldInverseAssociation = $this->accessor->getValue($otherSideEntity, $otherSideProperty);
-        if ($oldInverseAssociation) {
+        if ($oldInverseAssociation && $oldInverseAssociation != $thisSideEntity) {
             $this->accessor->setValue($oldInverseAssociation, $thisSideProperty, null);
         }
 
@@ -1068,9 +1075,11 @@ abstract class ResourceAbstract
 
         /**
          * Let's make the OLD inverse side aware about the changes we made in here
+         *
+         * In case we try to set from both directions in the same time, they mutually exclude themselves
          */
         $oldInverseAssociation = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-        if ($oldInverseAssociation) {
+        if ($oldInverseAssociation && $oldInverseAssociation != $otherSideEntity) {
             $this->accessor->setValue($oldInverseAssociation, $otherSideProperty, null);
         }
 
