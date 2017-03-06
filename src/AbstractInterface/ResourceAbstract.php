@@ -233,7 +233,8 @@ abstract class ResourceAbstract
 
         foreach ($entities as $entity) {
             if (filter_var($entity, FILTER_VALIDATE_INT)) {
-                return $filteredEntities[] = $entity;
+                $filteredEntities[] = $entity;
+                continue;
             }
 
             if ($this->accessor->isReadable($entity, 'id')) {
