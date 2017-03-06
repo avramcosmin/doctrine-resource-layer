@@ -2,6 +2,7 @@
 
 namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Persistence\ObjectManager;
 use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
 use Mindlahus\SymfonyAssets\Helper\StringHelper;
@@ -149,7 +150,7 @@ abstract class ResourceAbstract
                 return $options['useValue'];
             }
 
-            if (!is_array($options['useValue']) || !is_object($options['useValue'])) {
+            if (!is_array($options['useValue']) && !is_object($options['useValue'])) {
                 return null;
             }
 
@@ -232,7 +233,8 @@ abstract class ResourceAbstract
 
         foreach ($entities as $entity) {
             if (filter_var($entity, FILTER_VALIDATE_INT)) {
-                return $filteredEntities[] = $entity;
+                $filteredEntities[] = $entity;
+                continue;
             }
 
             if ($this->accessor->isReadable($entity, 'id')) {
@@ -1476,7 +1478,7 @@ abstract class ResourceAbstract
     {
         $this->_validate($thisSideEntity);
 
-        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
+        $otherSideEntities = new ArrayCollection($this->getManyById($repository, $otherSideEntities));
 
         // set the associations
         $this->accessor->setValue(
@@ -1594,7 +1596,7 @@ abstract class ResourceAbstract
     {
         $this->_validate($thisSideEntity);
 
-        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
+        $otherSideEntities = new ArrayCollection($this->getManyById($repository, $otherSideEntities));
 
         /**
          * remove all current associations
