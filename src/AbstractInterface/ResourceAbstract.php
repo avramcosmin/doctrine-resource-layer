@@ -7,6 +7,7 @@ use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
 use Mindlahus\SymfonyAssets\Helper\StringHelper;
 use Mindlahus\SymfonyAssets\Helper\ThrowableHelper;
 use Symfony\Bridge\Monolog\Logger;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
@@ -28,6 +29,10 @@ abstract class ResourceAbstract
      * @var PropertyAccess
      */
     private $accessor;
+    /**
+     * @var ContainerInterface
+     */
+    private $container;
     private $requestContent;
 
     /**
@@ -54,6 +59,22 @@ abstract class ResourceAbstract
         $this->logger = $logger;
         $this->accessor = PropertyAccess::createPropertyAccessor();
         $this->requestContent = $requestContent ?? $this->_getRequestContent();
+    }
+
+    /**
+     * @param ContainerInterface $container
+     */
+    public function setContainer(ContainerInterface $container)
+    {
+        $this->container = $container;
+    }
+
+    /**
+     * @return ContainerInterface
+     */
+    public function getContainer()
+    {
+        return $this->container;
     }
 
     /**
