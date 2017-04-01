@@ -1787,11 +1787,13 @@ abstract class ResourceAbstract
             ?
             json_decode($this->request->getContent())
             :
+            (
             $this->request->request->has('jsonContent')
                 ?
-                $this->request->request->get('jsonContent')
+                json_decode($this->request->request->get('jsonContent'))
                 :
                 new \stdClass()
+            )
         );
     }
 }
