@@ -7,6 +7,7 @@ use Doctrine\Common\Persistence\ObjectManager;
 use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
 use Mindlahus\SymfonyAssets\Helper\StringHelper;
 use Mindlahus\SymfonyAssets\Helper\ThrowableHelper;
+use Mindlahus\SymfonyAssets\Listener\HttpPutStreamListener;
 use Symfony\Bridge\Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -1778,22 +1779,29 @@ abstract class ResourceAbstract
      */
     protected function _getRequestContent()
     {
-        return (
-        (
-            method_exists($this->request, 'getContentType')
+        if (method_exists($this->request, 'getContentType')
             &&
             $this->request->getContentType() === 'json'
-        )
-            ?
-            json_decode($this->request->getContent())
-            :
-            (
-            $this->request->request->has('jsonContent')
-                ?
-                json_decode($this->request->request->get('jsonContent'))
-                :
-                new \stdClass()
-            )
-        );
+        ) {
+            return json_decode($this->request->getContent());
+        }
+
+        $data = [];
+        new HttpPutStreamListener($this->getRequest(), $data);
+        if (count($data)) {
+            $this->request->initialize(
+                [],
+                $data['request'],
+                [],
+                [],
+                $data['files']
+            );
+        }
+
+        if ($this->request->request->has('jsonContent')) {
+            return json_decode($this->request->request->get('jsonContent'));
+        }
+
+        return new \stdClass();
     }
 }
