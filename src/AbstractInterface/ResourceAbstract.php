@@ -13,7 +13,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
-abstract class ResourceAbstract
+abstract class ResourceAbstract implements ResourceAbstractInterface
 {
     /**
      * @var Request
