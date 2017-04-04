@@ -1796,6 +1796,7 @@ abstract class ResourceAbstract
                 [],
                 $data['files']
             );
+            $this->request->setRequestFormat('json');
         }
 
         if ($this->request->request->has('jsonContent')) {
