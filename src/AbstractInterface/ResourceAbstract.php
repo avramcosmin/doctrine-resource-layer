@@ -1788,7 +1788,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
 
         $data = [];
         new HttpPutStreamListener($this->getRequest(), $data);
-        if (count($data)) {
+        if (!$data['isEmptyPutStream']) {
             $this->request->initialize(
                 [],
                 $data['request'],
