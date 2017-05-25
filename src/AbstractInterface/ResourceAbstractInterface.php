@@ -1,7 +1,6 @@
-<?php
+<?php namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
 
-namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
-
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Bridge\Monolog\Logger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -13,12 +12,12 @@ interface ResourceAbstractInterface
     /**
      * @param ContainerInterface $container
      */
-    public function setContainer(ContainerInterface $container);
+    public function setContainer(ContainerInterface $container): void;
 
     /**
      * @return ContainerInterface
      */
-    public function getContainer();
+    public function getContainer(): ContainerInterface;
 
     /**
      * $options = [
@@ -79,7 +78,7 @@ interface ResourceAbstractInterface
      * @param string $col
      * @return array
      */
-    public function getManyBy(string $repository, array $entities, $col = 'id');
+    public function getManyBy(string $repository, array $entities, $col = 'id'): array;
 
     /**
      * $options = [
@@ -242,7 +241,7 @@ interface ResourceAbstractInterface
      * @return \DateTime
      * @throws \Throwable
      */
-    public function getDate($val, $isNullAllowed = true);
+    public function getDate($val, $isNullAllowed = true): \DateTime;
 
     /**
      * @param $val
@@ -289,15 +288,13 @@ interface ResourceAbstractInterface
     public function setBoolIfStdClassHas($entity, string $propertyPath, array $options = []);
 
     /**
-     * This allows for null's in case both not true and not yes.
+     * This sets true, false or null.
      *
      * $options = [
      *  ...used by $this->getFromJSON()
      *  propertyPath    optional    string
      *  useValue        optional    mixed
      *  forceReturn     optional    boolean
-     *
-     *  isNullAllowed   boolean     boolean
      * ]
      *
      * @param $entity
@@ -400,7 +397,6 @@ interface ResourceAbstractInterface
      * @param string $repository Path to the other's side repository
      * @param array $options
      * @return mixed
-     * @throws \Throwable
      */
     public function setManyToOneUnidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $options = []);
 
@@ -616,7 +612,7 @@ interface ResourceAbstractInterface
      * @param array $entities
      * @return array
      */
-    public function getManyById(string $repository, array $entities);
+    public function getManyById(string $repository, array $entities): array;
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-bidirectional
@@ -672,7 +668,7 @@ interface ResourceAbstractInterface
      * @param array $otherSideEntities Array of numbers; this searches by column `id`
      * @param array $options
      */
-    public function batchAddOneToManyUnidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $otherSideEntities, array $options = []);
+    public function batchAddOneToManyUnidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $otherSideEntities, array $options = []): void;
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
@@ -700,7 +696,7 @@ interface ResourceAbstractInterface
      * @param string $repository
      * @param array $options
      */
-    public function addOneToManyUnidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $options = []);
+    public function addOneToManyUnidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $options = []): void;
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
@@ -712,7 +708,7 @@ interface ResourceAbstractInterface
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $otherSideEntities
+     * @param array|ArrayCollection $otherSideEntities
      * @return mixed
      */
     public function setOneToManyUnidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $otherSideEntities);
@@ -729,7 +725,7 @@ interface ResourceAbstractInterface
      * @param array $otherSideEntities
      * @param array $options
      */
-    public function batchAddManyToManyBidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $otherSideEntities, array $options = []);
+    public function batchAddManyToManyBidirectional($thisSideEntity, string $thisSideProperty, string $repository, array $otherSideEntities, array $options = []): void;
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-many-bidirectional
@@ -781,7 +777,7 @@ interface ResourceAbstractInterface
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $otherSideEntities
+     * @param array|ArrayCollection $otherSideEntities
      * @param array $options
      * @return mixed
      */
@@ -799,7 +795,7 @@ interface ResourceAbstractInterface
      * @param array $otherSideEntities
      * @param array $options
      */
-    public function batchRemoveAssociations($thisSideEntity, string $thisSideProperty, string $repository, array $otherSideEntities, array $options = []);
+    public function batchRemoveAssociations($thisSideEntity, string $thisSideProperty, string $repository, array $otherSideEntities, array $options = []): void;
 
     /**
      * $options = [
@@ -832,12 +828,12 @@ interface ResourceAbstractInterface
     /**
      * @return Request
      */
-    public function getRequest();
+    public function getRequest(): Request;
 
     /**
      * @return ObjectManager
      */
-    public function getEntityManager();
+    public function getEntityManager(): ObjectManager;
 
     /**
      * @return PropertyAccess|\Symfony\Component\PropertyAccess\PropertyAccessor
@@ -845,7 +841,7 @@ interface ResourceAbstractInterface
     public function getAccessor();
 
     /**
-     * @return Logger|object
+     * @return Logger|\stdClass
      */
     public function getLogger();
 

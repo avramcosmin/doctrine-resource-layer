@@ -66,7 +66,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     /**
      * @param ContainerInterface $container
      */
-    public function setContainer(ContainerInterface $container)
+    public function setContainer(ContainerInterface $container): void
     {
         $this->container = $container;
     }
@@ -74,7 +74,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     /**
      * @return ContainerInterface
      */
-    public function getContainer()
+    public function getContainer(): ContainerInterface
     {
         return $this->container;
     }
@@ -217,7 +217,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
             $options['useValue'] = $options['entity'];
         }
 
-        if (!is_null($options['useValue']) && !GlobalHelper::isInstanceOf(
+        if ($options['useValue'] !== null && !GlobalHelper::isInstanceOf(
                 $options['useValue'],
                 $options['instanceOf'])
         ) {
@@ -233,7 +233,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * @param string $col
      * @return array
      */
-    public function getManyBy(string $repository, array $entities, $col = 'id')
+    public function getManyBy(string $repository, array $entities, $col = 'id'): array
     {
         return $this->entityManager
             ->getRepository($repository)
@@ -246,10 +246,10 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * Filters an array of entities and returns an array of id's
      * This will receive either integers or objects that should represent an instance of the same Entity.
      *
-     * @param $entities
+     * @param array $entities
      * @return array
      */
-    protected function _filterEntities($entities)
+    protected function _filterEntities(array $entities): array
     {
         $filteredEntities = [];
 
@@ -304,7 +304,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      */
     public function getFloat($val, $isNullAllowed = true)
     {
-        if (is_null($val) && $isNullAllowed === true) {
+        if ($val === null && $isNullAllowed === true) {
             return $val;
         }
 
@@ -427,7 +427,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      */
     public function getInt($val, $isNullAllowed = true)
     {
-        if (is_null($val) && $isNullAllowed === true) {
+        if ($val === null && $isNullAllowed === true) {
             return $val;
         }
 
@@ -508,7 +508,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
             $val = null;
         }
 
-        if (!is_numeric($val) && (($options['isNullAllowed'] ?? true) && !is_null($val))) {
+        if (!is_numeric($val) && (($options['isNullAllowed'] ?? true) && $val !== null)) {
             $this->logger->error('Not numeric value when trying to set numeric.');
             throw new \Error('Expecting numeric value. ' . strtoupper(gettype($val)) . ' given.');
         }
@@ -558,9 +558,9 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * @return \DateTime
      * @throws \Throwable
      */
-    public function getDate($val, $isNullAllowed = true)
+    public function getDate($val, $isNullAllowed = true): \DateTime
     {
-        if (is_null($val) && $isNullAllowed === true) {
+        if ($val === null && $isNullAllowed === true) {
             return $val;
         }
 
@@ -605,7 +605,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
 
         $val = $this->getAccessor()->getValue($entity, $propertyPath);
 
-        if (!is_bool($val) && !is_null($val)) {
+        if (!is_bool($val) && $val !== null) {
             $this->logger->error('Negation can only be used on boolean type properties.');
             throw new \Error('Negation can only be used on boolean type properties.');
         }
@@ -651,15 +651,13 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     }
 
     /**
-     * This allows for null's in case both not true and not yes.
+     * This sets true, false or null.
      *
      * $options = [
      *  ...used by $this->getFromJSON()
      *  propertyPath    optional    string
      *  useValue        optional    mixed
      *  forceReturn     optional    boolean
-     *
-     *  isNullAllowed   boolean     boolean
      * ]
      *
      * @param $entity
@@ -671,19 +669,16 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     {
         $this->_validate($entity);
 
-        $args = [
-            $this->getFromJSON($propertyPath, $options),
-            FILTER_VALIDATE_BOOLEAN
-        ];
+        $val = $this->getFromJSON($propertyPath, $options);
 
-        if (!isset($options['isNullAllowed']) || $options['isNullAllowed'] !== true) {
-            $args[] = FILTER_NULL_ON_FAILURE;
+        if ($val !== null) {
+            $val = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         }
 
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            call_user_func_array('filter_var', $args)
+            $val
         );
 
         return $entity;
@@ -841,7 +836,6 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * @param string $repository Path to the other's side repository
      * @param array $options
      * @return mixed
-     * @throws \Throwable
      */
     public function setManyToOneUnidirectional($thisSideEntity,
                                                string $thisSideProperty,
@@ -1309,7 +1303,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * @param array $entities
      * @return array
      */
-    public function getManyById(string $repository, array $entities)
+    public function getManyById(string $repository, array $entities): array
     {
         return $this->getManyBy($repository, $entities);
     }
@@ -1427,7 +1421,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
                                                     string $thisSideProperty,
                                                     string $repository,
                                                     array $otherSideEntities,
-                                                    array $options = [])
+                                                    array $options = []): void
     {
         foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->addOneToManyUnidirectional(
@@ -1470,7 +1464,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     public function addOneToManyUnidirectional($thisSideEntity,
                                                string $thisSideProperty,
                                                string $repository,
-                                               array $options = [])
+                                               array $options = []): void
     {
         $this->_validate($thisSideEntity);
 
@@ -1490,7 +1484,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $otherSideEntities
+     * @param array|ArrayCollection $otherSideEntities
      * @return mixed
      */
     public function setOneToManyUnidirectional($thisSideEntity,
@@ -1528,7 +1522,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
                                                     string $thisSideProperty,
                                                     string $repository,
                                                     array $otherSideEntities,
-                                                    array $options = [])
+                                                    array $options = []): void
     {
         foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->addManyToManyBidirectional(
@@ -1606,7 +1600,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * @param $thisSideEntity
      * @param string $thisSideProperty
      * @param string $repository
-     * @param array $otherSideEntities
+     * @param array|ArrayCollection $otherSideEntities
      * @param array $options
      * @return mixed
      */
@@ -1662,7 +1656,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
                                             string $thisSideProperty,
                                             string $repository,
                                             array $otherSideEntities,
-                                            array $options = [])
+                                            array $options = []): void
     {
         foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
             $this->removeAssociation(
@@ -1737,7 +1731,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     /**
      * @return Request
      */
-    public function getRequest()
+    public function getRequest(): Request
     {
         return $this->request;
     }
@@ -1745,7 +1739,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     /**
      * @return ObjectManager
      */
-    public function getEntityManager()
+    public function getEntityManager(): ObjectManager
     {
         return $this->entityManager;
     }
@@ -1759,7 +1753,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     }
 
     /**
-     * @return Logger|object
+     * @return Logger|\stdClass
      */
     public function getLogger()
     {
@@ -1786,8 +1780,10 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
             return json_decode($this->request->getContent());
         }
 
-        $data = [];
-        new HttpPutStreamListener($this->getRequest(), $data);
+        $httpPutStreamListener = new HttpPutStreamListener();
+        $data = $httpPutStreamListener->getData(
+            $this->getRequest()
+        );
         if (!$data['isEmptyPutStream']) {
             $this->request->initialize(
                 [],
