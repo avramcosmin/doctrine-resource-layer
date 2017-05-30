@@ -231,9 +231,9 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
      * @param string $repository
      * @param array $entities
      * @param string $col
-     * @return array
+     * @return mixed|array
      */
-    public function getManyBy(string $repository, array $entities, $col = 'id'): array
+    public function getManyBy(string $repository, array $entities, $col = 'id')
     {
         return $this->entityManager
             ->getRepository($repository)
@@ -555,10 +555,10 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
     /**
      * @param $val
      * @param bool $isNullAllowed
-     * @return \DateTime
+     * @return mixed|\DateTime|null
      * @throws \Throwable
      */
-    public function getDate($val, $isNullAllowed = true): \DateTime
+    public function getDate($val, $isNullAllowed = true)
     {
         if ($val === null && $isNullAllowed === true) {
             return $val;

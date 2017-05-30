@@ -76,9 +76,9 @@ interface ResourceAbstractInterface
      * @param string $repository
      * @param array $entities
      * @param string $col
-     * @return array
+     * @return mixed|array
      */
-    public function getManyBy(string $repository, array $entities, $col = 'id'): array;
+    public function getManyBy(string $repository, array $entities, $col = 'id');
 
     /**
      * $options = [
@@ -238,10 +238,10 @@ interface ResourceAbstractInterface
     /**
      * @param $val
      * @param bool $isNullAllowed
-     * @return \DateTime
+     * @return mixed|\DateTime|null
      * @throws \Throwable
      */
-    public function getDate($val, $isNullAllowed = true): \DateTime;
+    public function getDate($val, $isNullAllowed = true);
 
     /**
      * @param $val
