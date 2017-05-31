@@ -47,7 +47,7 @@ interface ResourceAbstractInterface
      *
      * @param string $propertyPath
      * @param array $options
-     * @return mixed
+     * @return mixed|null
      */
     public function getFromJSON(string $propertyPath, array $options = []);
 
@@ -68,7 +68,7 @@ interface ResourceAbstractInterface
      * @param string $propertyPath
      * @param string $repository
      * @param array $options
-     * @return mixed
+     * @return mixed|null
      */
     public function getOneBy(string $propertyPath, string $repository, array $options = []);
 
@@ -76,9 +76,9 @@ interface ResourceAbstractInterface
      * @param string $repository
      * @param array $entities
      * @param string $col
-     * @return mixed|array
+     * @return array
      */
-    public function getManyBy(string $repository, array $entities, $col = 'id');
+    public function getManyBy(string $repository, array $entities, $col = 'id'): array;
 
     /**
      * $options = [
@@ -101,7 +101,7 @@ interface ResourceAbstractInterface
     /**
      * @param $val
      * @param bool $isNullAllowed
-     * @return mixed
+     * @return mixed|null
      * @throws \Throwable
      */
     public function getFloat($val, $isNullAllowed = true);
@@ -171,7 +171,7 @@ interface ResourceAbstractInterface
      *
      * @param $val
      * @param bool $isNullAllowed
-     * @return mixed
+     * @return mixed|null
      * @throws \Throwable
      */
     public function getInt($val, $isNullAllowed = true);
@@ -238,7 +238,7 @@ interface ResourceAbstractInterface
     /**
      * @param $val
      * @param bool $isNullAllowed
-     * @return mixed|\DateTime|null
+     * @return bool|null|\DateTime
      * @throws \Throwable
      */
     public function getDate($val, $isNullAllowed = true);
