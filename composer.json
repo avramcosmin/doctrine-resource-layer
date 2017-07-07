@@ -25,7 +25,6 @@
         "erusev/parsedown-extra": "^0.7.1",
         "friendsofsymfony/rest-bundle": "^2.2",
         "jms/serializer-bundle": "^2.0",
-        "nelmio/cors-bundle": "^1.5",
         "gedmo/doctrine-extensions": "^2.4",
         "stof/doctrine-extensions-bundle": "^1.2",
         "avramcosmin/forceutf8": "^2.0",

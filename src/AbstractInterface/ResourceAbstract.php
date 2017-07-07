@@ -3,82 +3,14 @@
 namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Persistence\ObjectManager;
 use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
 use Mindlahus\SymfonyAssets\Helper\StringHelper;
 use Mindlahus\SymfonyAssets\Helper\ThrowableHelper;
-use Mindlahus\SymfonyAssets\Listener\HttpPutStreamListener;
-use Symfony\Bridge\Monolog\Logger;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\PropertyAccess\PropertyAccess;
 
-abstract class ResourceAbstract implements ResourceAbstractInterface
+abstract class ResourceAbstract
+    extends \Mindlahus\SymfonyAssets\AbstractInterface\ResourceAbstract
+    implements ResourceAbstractInterface
 {
-    /**
-     * @var Request
-     */
-    private $request;
-    /**
-     * @var ObjectManager
-     */
-    private $entityManager;
-    /**
-     * @var Logger $logger
-     */
-    private $logger;
-    /**
-     * @var PropertyAccess
-     */
-    private $accessor;
-    /**
-     * @var ContainerInterface
-     */
-    private $container;
-    private $requestContent;
-
-    /**
-     * todo : check that the logger actually works
-     *
-     * IMPORTANT!   If you should use an instance of the RequestStack,
-     *              return the Request by calling $request->getCurrentRequest()
-     *
-     * ResourceAbstract constructor.
-     * @param Request $request
-     * @param ObjectManager $entityManager
-     * @param Logger $logger
-     * @param null $requestContent
-     */
-    public function __construct(
-        Request $request,
-        ObjectManager $entityManager,
-        Logger $logger,
-        $requestContent = null
-    )
-    {
-        $this->request = $request;
-        $this->entityManager = $entityManager;
-        $this->logger = $logger;
-        $this->accessor = PropertyAccess::createPropertyAccessor();
-        $this->requestContent = $requestContent ?? $this->_getRequestContent();
-    }
-
-    /**
-     * @param ContainerInterface $container
-     */
-    public function setContainer(ContainerInterface $container): void
-    {
-        $this->container = $container;
-    }
-
-    /**
-     * @return ContainerInterface
-     */
-    public function getContainer(): ContainerInterface
-    {
-        return $this->container;
-    }
-
     /**
      * $options = [
      *  ...used by $this->getFromJSON()
@@ -968,7 +900,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
          * In case we try to set from both directions in the same time, they mutually exclude themselves
          */
         $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-        if ($oldOtherSideEntity && $oldOtherSideEntity != $otherSideEntity) {
+        if ($oldOtherSideEntity && $oldOtherSideEntity !== $otherSideEntity) {
             $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
         }
 
@@ -978,7 +910,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
          * In case we try to set from both directions in the same time, they mutually exclude themselves
          */
         $oldInverseAssociation = $this->accessor->getValue($otherSideEntity, $otherSideProperty);
-        if ($oldInverseAssociation && $oldInverseAssociation != $thisSideEntity) {
+        if ($oldInverseAssociation && $oldInverseAssociation !== $thisSideEntity) {
             $this->accessor->setValue($oldInverseAssociation, $thisSideProperty, null);
         }
 
@@ -1097,7 +1029,7 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
          * In case we try to set from both directions in the same time, they mutually exclude themselves
          */
         $oldInverseAssociation = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-        if ($oldInverseAssociation && $oldInverseAssociation != $otherSideEntity) {
+        if ($oldInverseAssociation && $oldInverseAssociation !== $otherSideEntity) {
             $this->accessor->setValue($oldInverseAssociation, $otherSideProperty, null);
         }
 
@@ -1726,79 +1658,5 @@ abstract class ResourceAbstract implements ResourceAbstractInterface
         }
 
         return $thisSideEntity;
-    }
-
-    /**
-     * @return Request
-     */
-    public function getRequest(): Request
-    {
-        return $this->request;
-    }
-
-    /**
-     * @return ObjectManager
-     */
-    public function getEntityManager(): ObjectManager
-    {
-        return $this->entityManager;
-    }
-
-    /**
-     * @return PropertyAccess|\Symfony\Component\PropertyAccess\PropertyAccessor
-     */
-    public function getAccessor()
-    {
-        return $this->accessor;
-    }
-
-    /**
-     * @return Logger|\stdClass
-     */
-    public function getLogger()
-    {
-        return $this->logger;
-    }
-
-    /**
-     * @return mixed|\stdClass
-     */
-    public function getRequestContent()
-    {
-        return $this->requestContent;
-    }
-
-    /**
-     * @return mixed|\stdClass
-     */
-    protected function _getRequestContent()
-    {
-        if (method_exists($this->request, 'getContentType')
-            &&
-            $this->request->getContentType() === 'json'
-        ) {
-            return json_decode($this->request->getContent());
-        }
-
-        $httpPutStreamListener = new HttpPutStreamListener();
-        $data = $httpPutStreamListener->getData(
-            $this->getRequest()
-        );
-        if (!$data['isEmptyPutStream']) {
-            $this->request->initialize(
-                [],
-                $data['request'],
-                [],
-                [],
-                $data['files']
-            );
-            $this->request->setRequestFormat('json');
-        }
-
-        if ($this->request->request->has('jsonContent')) {
-            return json_decode($this->request->request->get('jsonContent'));
-        }
-
-        return new \stdClass();
     }
 }
