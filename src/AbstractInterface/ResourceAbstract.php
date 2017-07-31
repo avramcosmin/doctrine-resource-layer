@@ -2,239 +2,217 @@
 
 namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Mindlahus\SymfonyAssets\Helper\GlobalHelper;
 use Mindlahus\SymfonyAssets\Helper\StringHelper;
-use Mindlahus\SymfonyAssets\Helper\ThrowableHelper;
 
 abstract class ResourceAbstract
     extends \Mindlahus\SymfonyAssets\AbstractInterface\ResourceAbstract
-    implements ResourceAbstractInterface
+    implements ResourceInterface
 {
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
+     * http://symfony.com/doc/current/components/property_access.html
      *
+     * @param string $propertyPath
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @return null|mixed
+     */
+    public function getFromJSON(string $propertyPath,
+                                $content = null,
+                                bool $forceReturn = null
+    )
+    {
+        if ($forceReturn === true) {
+            return $content;
+        }
+
+        if (!is_array($content) && !is_object($content)) {
+            $content = $this->getRequestContent();
+        }
+
+        return $this->getAccessor()->getValue(
+            $content,
+            $propertyPath
+        );
+    }
+
+    /**
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
      * @return mixed
      */
-    public function set($entity, string $propertyPath, array $options = [])
+    public function set($entity,
+                        string $propertyPath,
+                        string $propertyPathOverwrite = null,
+                        $content = null,
+                        bool $forceReturn = null
+    )
     {
-        $this->_validate($entity);
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            $this->getFromJSON($propertyPath, $options)
+            $this->getFromJSON(
+                $propertyPathOverwrite ?: $propertyPath,
+                $content,
+                $forceReturn
+            )
         );
 
         return $entity;
     }
 
     /**
-     * @param $entity
-     * @param null $instanceOf
-     * @return mixed
-     * @throws \Throwable
-     */
-    protected function _validate($entity, $instanceOf = null)
-    {
-        if (
-            ($instanceOf !== null && !$entity instanceof $instanceOf)
-            ||
-            !is_object($entity)
-            ||
-            $entity instanceof \stdClass
-        ) {
-            throw new \Error(
-                'Expecting instance of an entity class. '
-                . strtoupper(gettype($entity))
-                . ' given.'
-            );
-        }
-
-        return $entity;
-    }
-
-    /**
-     * @param $entity
-     * @param $propertyPath
-     * @return mixed|null
-     */
-    protected function _getValue($entity, $propertyPath)
-    {
-        if (!$this->accessor->isReadable($entity, $propertyPath)) {
-            return null;
-        }
-
-        return $this->accessor->getValue($entity, $propertyPath);
-    }
-
-    /**
-     * http://symfony.com/doc/current/components/property_access.html
-     *
-     * $options = [
-     *  propertyPath    optional    string      Deep reading from object|array
-     *  useValue        optional    mixed       Use given value in place of $this->requestContent
-     *  forceReturn     optional    boolean     Force return of $options['useValue'] without deep reading in case if object|array
-     * ]
-     *
-     * Please use $options['propertyPath'] to deep read from an object|array
-     *
-     * @param string $propertyPath
-     * @param array $options
-     * @return mixed|null
-     */
-    public function getFromJSON(string $propertyPath, array $options = [])
-    {
-
-        if (isset($options['propertyPath']) && is_string($options['propertyPath'])) {
-            $propertyPath = $options['propertyPath'];
-        }
-
-        if (array_key_exists('useValue', $options)) {
-
-            if ($options['forceReturn'] === true) {
-                return $options['useValue'];
-            }
-
-            if (!is_array($options['useValue']) && !is_object($options['useValue'])) {
-                return null;
-            }
-
-            return $this->_getValue($options['useValue'], $propertyPath);
-        }
-
-        return $this->_getValue($this->requestContent, $propertyPath);
-    }
-
-    /**
-     * $options = [
-     *  entity  optional    Doctrine Entity
-     *  findBy  optional    string              Defaults to the column name `id`
-     *
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
-     *
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param string $propertyPath
      * @param string $repository
-     * @param array $options
-     * @return mixed|null
-     */
-    public function getOneBy(string $propertyPath, string $repository, array $options = [])
-    {
-        $options = array_merge([
-            'findBy' => 'id'
-        ], $options);
-
-        if (!array_key_exists('entity', $options)) {
-            $options['useValue'] = $this->entityManager
-                ->getRepository($repository)
-                ->findOneBy([
-                    $options['findBy'] => $this->getFromJSON($propertyPath, $options)
-                ]);
-        } else {
-            $options['useValue'] = $options['entity'];
-        }
-
-        if ($options['useValue'] !== null && !GlobalHelper::isInstanceOf(
-                $options['useValue'],
-                $options['instanceOf'])
-        ) {
-            ThrowableHelper::NotInstanceOf($options['useValue'], $options['instanceOf']);
-        }
-
-        return $options['useValue'];
-    }
-
-    /**
-     * @param string $repository
-     * @param array $entities
      * @param string $col
-     * @return array
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @return object|null
      */
-    public function getManyBy(string $repository, array $entities, $col = 'id'): array
+    public function getOneBy(string $propertyPath,
+                             string $repository,
+                             string $col,
+                             string $propertyPathOverwrite = null,
+                             $content = null,
+                             bool $forceReturn = null
+    )
     {
         return $this->entityManager
             ->getRepository($repository)
-            ->findBy([
-                $col => $this->_filterEntities($entities)
+            ->findOneBy([
+                $col => $this->getFromJSON(
+                    $propertyPathOverwrite ?: $propertyPath,
+                    $content,
+                    $forceReturn
+                )
             ]);
     }
 
     /**
-     * Filters an array of entities and returns an array of id's
-     * This will receive either integers or objects that should represent an instance of the same Entity.
-     *
-     * @param array $entities
-     * @return array
+     * @param string $propertyPath
+     * @param string $repository
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @return object|null
      */
-    protected function _filterEntities(array $entities): array
+    public function getOneById(string $propertyPath,
+                               string $repository,
+                               string $propertyPathOverwrite = null,
+                               $content = null,
+                               bool $forceReturn = null
+    )
     {
-        $filteredEntities = [];
-
-        foreach ($entities as $entity) {
-            if (filter_var($entity, FILTER_VALIDATE_INT)) {
-                $filteredEntities[] = $entity;
-                continue;
-            }
-
-            if ($this->accessor->isReadable($entity, 'id')) {
-                $filteredEntities[] = $this->accessor->getValue($entity, 'id');
-            }
-        }
-
-        return $filteredEntities;
+        return $this->getOneBy(
+            $propertyPath,
+            $repository,
+            'id',
+            $propertyPathOverwrite,
+            $content,
+            $forceReturn
+        );
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
+     * @param string $repository
+     * @param array $values
+     * @param string $col
+     * @return array
+     */
+    public function getManyBy(string $repository,
+                              array $values,
+                              string $col
+    ): array
+    {
+        return $this->entityManager
+            ->getRepository($repository)
+            ->findBy([
+                $col => $values
+            ]);
+    }
+
+    /**
+     * @param string $repository
+     * @param array $values
+     * @return array
+     */
+    public function getManyById(string $repository,
+                                array $values
+    ): array
+    {
+        return $this->getManyBy(
+            $repository,
+            $this->filterEntitiesForIds($values),
+            'id'
+        );
+    }
+
+    /**
+     * Filters an array of entities and returns an array of id's
+     * This will receive either integers or objects that should represent same Entity object.
      *
-     *  ...used by $this->getFloat()
-     *  isNullAllowed  optional    boolean
-     * ]
-     *
+     * @param array $arr
+     * @return array
+     */
+    public function filterEntitiesForIds(array $arr): array
+    {
+        $res = [];
+
+        foreach ($arr as $item) {
+            if (filter_var($item, FILTER_VALIDATE_INT)) {
+                $res[] = $item;
+                continue;
+            }
+
+            $res[] = $this->accessor->getValue($item, 'id');
+        }
+
+        return $res;
+    }
+
+    /**
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @param bool $isNullAllowed
      * @return mixed
      */
-    public function setFloat($entity, string $propertyPath, array $options = [])
+    public function setFloat($entity,
+                             string $propertyPath,
+                             string $propertyPathOverwrite = null,
+                             $content = null,
+                             bool $forceReturn = null,
+                             bool $isNullAllowed = true
+    )
     {
-        $this->_validate($entity);
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            $this->getFloat($this->getFromJSON($propertyPath, $options), $options['isNullAllowed'] ?? true)
+            $this->getFloat(
+                $this->getFromJSON(
+                    $propertyPathOverwrite ?: $propertyPath,
+                    $content,
+                    $forceReturn
+                ),
+                $isNullAllowed
+            )
         );
 
         return $entity;
     }
 
     /**
-     * @param $val
+     * @param string|float|null $val
      * @param bool $isNullAllowed
-     * @return mixed|null
+     * @return null|float
      * @throws \Throwable
      */
-    public function getFloat($val, $isNullAllowed = true)
+    public function getFloat($val, bool $isNullAllowed = true):? float
     {
         if ($val === null && $isNullAllowed === true) {
             return $val;
@@ -246,68 +224,72 @@ abstract class ResourceAbstract
 
         if (!$val) {
             $this->logger->error('Not float value when trying to get float.');
-            throw new \Error('Expecting integer value. ' . $valType . ' given.');
+            throw new \Error('Expecting float value. ' . $valType . ' given.');
         }
 
         return $val;
     }
 
     /**
-     * @param $val
-     * @return mixed
+     * @param string|float $val
+     * @return null|float
      */
-    public function isFloat($val)
+    public function isFloat($val):? float
     {
         return StringHelper::isFloat($val);
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...used by $this->getFloat()
-     *  isNullAllowed  optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @param bool $isNullAllowed
      * @return mixed
      */
-    public function setDouble($entity, string $propertyPath, array $options = [])
+    public function setDouble($entity,
+                              string $propertyPath,
+                              string $propertyPathOverwrite = null,
+                              $content = null,
+                              bool $forceReturn = null,
+                              bool $isNullAllowed = true
+    )
     {
-        $this->_validate($entity);
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            $this->getDouble($this->getFromJSON($propertyPath, $options), $options['isNullAllowed'] ?? true)
+            $this->getDouble(
+                $this->getFromJSON(
+                    $propertyPathOverwrite ?: $propertyPath,
+                    $content,
+                    $forceReturn
+                ),
+                $isNullAllowed
+            )
         );
 
         return $entity;
     }
 
     /**
-     * @param $val
+     * @param string|float|null $val
      * @param bool $isNullAllowed
-     * @return mixed
+     * @return null|float
      */
-    public function getDouble($val, $isNullAllowed = true)
+    public function getDouble($val, bool $isNullAllowed = true):? float
     {
         return $this->getWithDecimals($val, 2, $isNullAllowed);
     }
 
     /**
      * @param $val
-     * @param $decimals
+     * @param int $decimals
      * @param bool $isNullAllowed
-     * @return mixed
+     * @return null|float
      * @throws \Throwable
      */
-    public function getWithDecimals($val, $decimals, $isNullAllowed = true)
+    public function getWithDecimals($val, int $decimals, bool $isNullAllowed = true):? float
     {
 
         if (!is_numeric($val)) {
@@ -319,29 +301,33 @@ abstract class ResourceAbstract
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...used by $this->getInt()
-     *  isNullAllowed  optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @param bool $isNullAllowed
      * @return mixed
      */
-    public function setInt($entity, string $propertyPath, array $options = [])
+    public function setInt($entity,
+                           string $propertyPath,
+                           string $propertyPathOverwrite = null,
+                           $content = null,
+                           bool $forceReturn = null,
+                           bool $isNullAllowed = true
+    )
     {
-        $this->_validate($entity);
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            $this->getInt($this->getFromJSON($propertyPath, $options), $options['isNullAllowed'] ?? true)
+            $this->getInt(
+                $this->getFromJSON(
+                    $propertyPathOverwrite ?: $propertyPath,
+                    $content,
+                    $forceReturn
+                ),
+                $isNullAllowed
+            )
         );
 
         return $entity;
@@ -352,12 +338,12 @@ abstract class ResourceAbstract
      * The problem with this is that will transform a float into an integer with error
      * Ex. 122.45 will become 12245 (this is dangerous)
      *
-     * @param $val
+     * @param string|int|null $val
      * @param bool $isNullAllowed
      * @return mixed|null
      * @throws \Throwable
      */
-    public function getInt($val, $isNullAllowed = true)
+    public function getInt($val, bool $isNullAllowed = true)
     {
         if ($val === null && $isNullAllowed === true) {
             return $val;
@@ -377,108 +363,71 @@ abstract class ResourceAbstract
 
     /**
      * @param $val
-     * @return mixed
+     * @return null|int
      */
-    public function isInt($val)
+    public function isInt($val):? int
     {
         return StringHelper::isInt($val);
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param $defaultValue
-     * @param array $options
+     * @param mixed $defaultValue
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
      * @return mixed
      */
-    public function setOrUseDefault($entity, string $propertyPath, $defaultValue, array $options = [])
+    public function setOrUseDefault($entity,
+                                    string $propertyPath,
+                                    $defaultValue,
+                                    string $propertyPathOverwrite = null,
+                                    $content = null,
+                                    bool $forceReturn = null
+    )
     {
-        $this->_validate($entity);
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            $this->getFromJSON($propertyPath, $options) ?? $defaultValue
+            $this->getFromJSON(
+                $propertyPathOverwrite ?: $propertyPath,
+                $content,
+                $forceReturn
+            ) ?: $defaultValue
         );
 
         return $entity;
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  isNullAllowed  optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @param bool $isNullAllowed
      * @return mixed
-     * @throws \Throwable
      */
-    public function setNumeric($entity, string $propertyPath, array $options = [])
+    public function setNumeric($entity,
+                               string $propertyPath,
+                               string $propertyPathOverwrite = null,
+                               $content = null,
+                               bool $forceReturn = null,
+                               bool $isNullAllowed = true
+    )
     {
-        $this->_validate($entity);
-
-        $val = $this->getFromJSON($propertyPath, $options);
-
-        /**
-         * !is_numeric() fixes the empty(0) === true
-         */
-        if (empty($val) && !is_numeric($val)) {
-            $val = null;
-        }
-
-        if (!is_numeric($val) && (($options['isNullAllowed'] ?? true) && $val !== null)) {
-            $this->logger->error('Not numeric value when trying to set numeric.');
-            throw new \Error('Expecting numeric value. ' . strtoupper(gettype($val)) . ' given.');
-        }
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            $val
-        );
-
-        return $entity;
-    }
-
-    /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...used by $this->getInt()
-     *  isNullAllowed  optional    boolean
-     * ]
-     *
-     * @param $entity
-     * @param string $propertyPath
-     * @param array $options
-     * @return mixed
-     * @throws \Throwable
-     */
-    public function setDate($entity, string $propertyPath, array $options = [])
-    {
-        $this->_validate($entity);
-
-        $this->accessor->setValue(
-            $entity,
-            $propertyPath,
-            $this->getDate($this->getFromJSON($propertyPath, $options), $options['isNullAllowed'] ?? true)
+            $this->getNumeric(
+                $this->getFromJSON(
+                    $propertyPathOverwrite ?: $propertyPath,
+                    $content,
+                    $forceReturn
+                ),
+                $isNullAllowed
+            )
         );
 
         return $entity;
@@ -487,10 +436,65 @@ abstract class ResourceAbstract
     /**
      * @param $val
      * @param bool $isNullAllowed
-     * @return bool|null|\DateTime
-     * @throws \Throwable
+     * @return mixed
+     * @throws \Error
      */
-    public function getDate($val, $isNullAllowed = true)
+    public function getNumeric($val, bool $isNullAllowed = true)
+    {
+        if ($val === null && $isNullAllowed === true) {
+            return $val;
+        }
+
+        $valType = strtoupper(gettype($val));
+
+        if (!is_numeric($val)) {
+            $this->logger->error('Not numeric value when trying to set numeric.');
+            throw new \Error('Expecting numeric value. ' . $valType . ' given.');
+        }
+
+        return $val;
+    }
+
+    /**
+     * @param $entity
+     * @param string $propertyPath
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @param bool $isNullAllowed
+     * @return mixed
+     */
+    public function setDate($entity,
+                            string $propertyPath,
+                            string $propertyPathOverwrite = null,
+                            $content = null,
+                            bool $forceReturn = null,
+                            bool $isNullAllowed = true
+    )
+    {
+        $this->accessor->setValue(
+            $entity,
+            $propertyPath,
+            $this->getDate(
+                $this->getFromJSON(
+                    $propertyPathOverwrite ?: $propertyPath,
+                    $content,
+                    $forceReturn
+                ),
+                $isNullAllowed
+            )
+        );
+
+        return $entity;
+    }
+
+    /**
+     * @param $val
+     * @param bool $isNullAllowed
+     * @return \DateTime|null
+     * @throws \Error
+     */
+    public function getDate($val, $isNullAllowed = true):? \DateTime
     {
         if ($val === null && $isNullAllowed === true) {
             return $val;
@@ -499,8 +503,8 @@ abstract class ResourceAbstract
         $val = $this->isDateTime($val);
 
         if (!$val) {
-            $this->logger->error('Not \DateTime instance when trying to get date.');
-            throw new \Error('Expecting \DateTime instance. ' . strtoupper(gettype($val)) . ' given.');
+            $this->logger->error('Not \DateTime() instance when trying to get date.');
+            throw new \Error('Expecting \DateTime() instance. ' . strtoupper(gettype($val)) . ' given.');
         }
 
         return $val;
@@ -508,9 +512,9 @@ abstract class ResourceAbstract
 
     /**
      * @param $val
-     * @return bool|\DateTime
+     * @return \DateTime|null
      */
-    public function isDateTime($val)
+    public function isDateTime($val):? \DateTime
     {
         return StringHelper::isDateTime($val);
     }
@@ -519,22 +523,13 @@ abstract class ResourceAbstract
      * This gets the current value of the propertyPath and sets its negation.
      * The value should be a boolean.
      *
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
      * @return mixed
-     * @throws \Throwable
+     * @throws \Error
      */
     public function setNegation($entity, string $propertyPath)
     {
-        $this->_validate($entity);
-
         $val = $this->getAccessor()->getValue($entity, $propertyPath);
 
         if (!is_bool($val) && $val !== null) {
@@ -545,38 +540,32 @@ abstract class ResourceAbstract
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            !$val
+            $val === null ? $val : !$val
         );
 
         return $entity;
     }
 
     /**
-     * $options = [
-     *  stdClass                required    \stdClass
-     *  stdClassPropertyPath    required    string
-     *
-     *  ...used by $this->getFromJSON()
-     *  propertyPath            optional    string
-     *  useValue                optional    mixed
-     *  forceReturn             optional    boolean
-     *
-     *  isNullAllowed           optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param $objectOrArray
+     * @param string|null $propertyPathOverwrite
      * @return mixed
      */
-    public function setBoolIfStdClassHas($entity, string $propertyPath, array $options = [])
+    public function setBoolIfObjectOrArrayHas($entity,
+                                              string $propertyPath,
+                                              $objectOrArray,
+                                              string $propertyPathOverwrite = null
+    )
     {
-        $this->_validate($entity);
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            property_exists($options['stdClass'], $options['stdClassPropertyPath']) ?? null
+            $this->getAccessor()->isReadable(
+                $objectOrArray,
+                $propertyPathOverwrite ?: $propertyPath
+            )
         );
 
         return $entity;
@@ -585,23 +574,25 @@ abstract class ResourceAbstract
     /**
      * This sets true, false or null.
      *
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
      * @return mixed
      */
-    public function setBool($entity, string $propertyPath, array $options = [])
+    public function setBool($entity,
+                            string $propertyPath,
+                            string $propertyPathOverwrite = null,
+                            $content = null,
+                            bool $forceReturn = null
+    )
     {
-        $this->_validate($entity);
-
-        $val = $this->getFromJSON($propertyPath, $options);
+        $val = $this->getFromJSON(
+            $propertyPathOverwrite ?: $propertyPath,
+            $content,
+            $forceReturn
+        );
 
         if ($val !== null) {
             $val = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
@@ -617,119 +608,138 @@ abstract class ResourceAbstract
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param int|null $length
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
      * @return mixed
      */
-    public function setMarkdown($entity, string $propertyPath, array $options)
+    public function setMarkdown($entity,
+                                string $propertyPath,
+                                int $length = null,
+                                string $propertyPathOverwrite = null,
+                                $content = null,
+                                bool $forceReturn = null
+    )
     {
         // this will set propertyPathMarkdown, propertyPathHTML & propertyPathShort
-        $this->setMarkdownRaw($entity, $propertyPath, $options);
+        $this->setMarkdownRaw(
+            $entity,
+            $propertyPath,
+            $propertyPathOverwrite,
+            $content,
+            $forceReturn
+        );
+        $propertyPath = str_replace('Markdown', 'HTML', $propertyPath);
+        $propertyPathOverwrite = str_replace('Markdown', 'HTML', $propertyPathOverwrite);
         $this->setMarkdownHTML(
             $entity,
-            str_replace('Markdown', 'HTML', $propertyPath),
-            array_merge($options, [
-                'propertyPath' => str_replace('Markdown', 'HTML', $options['propertyPath'])
-            ])
+            $propertyPath,
+            $propertyPathOverwrite,
+            $content,
+            $forceReturn
         );
+        $propertyPath = str_replace('Markdown', 'Short', $propertyPath);
+        $propertyPathOverwrite = str_replace('Markdown', 'Short', $propertyPathOverwrite);
         $this->setMarkdownShort(
             $entity,
-            str_replace('Markdown', 'Short', $propertyPath),
-            array_merge($options, [
-                'propertyPath' => str_replace('Markdown', 'Short', $options['propertyPath'])
-            ])
+            $propertyPath,
+            $length,
+            $propertyPathOverwrite,
+            $content,
+            $forceReturn
         );
 
         return $entity;
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
      * @return mixed
      */
-    public function setMarkdownRaw($entity, string $propertyPath, array $options)
+    public function setMarkdownRaw($entity,
+                                   string $propertyPath,
+                                   string $propertyPathOverwrite = null,
+                                   $content = null,
+                                   bool $forceReturn = null
+    )
     {
-        $this->_validate($entity);
-
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            $this->getFromJSON($propertyPath, $options)
+            $this->getFromJSON(
+                $propertyPathOverwrite ?: $propertyPath,
+                $content,
+                $forceReturn
+            )
         );
 
         return $entity;
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
      * @return mixed
      */
-    public function setMarkdownHTML($entity, string $propertyPath, array $options)
+    public function setMarkdownHTML($entity,
+                                    string $propertyPath,
+                                    string $propertyPathOverwrite = null,
+                                    $content = null,
+                                    bool $forceReturn = null
+    )
     {
-        $this->_validate($entity);
+        $val = $this->getFromJSON(
+            $propertyPathOverwrite ?: $propertyPath,
+            $content,
+            $forceReturn
+        );
 
-        $val = $this->getFromJSON($propertyPath, $options);
-
-        if (property_exists($entity, $propertyPath)) {
-            $this->accessor->setValue(
-                $entity,
-                $propertyPath,
-                StringHelper::parsedownExtra($val)
-            );
-        }
+        $this->accessor->setValue(
+            $entity,
+            $propertyPath,
+            StringHelper::parsedownExtra($val)
+        );
 
         return $entity;
     }
 
     /**
-     * $options = [
-     *  ...used by $this->getFromJSON()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     * ]
-     *
      * @param $entity
      * @param string $propertyPath
-     * @param array $options
+     * @param int|null $length
+     * @param string|null $propertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
      * @return mixed
      */
-    public function setMarkdownShort($entity, string $propertyPath, array $options)
+    public function setMarkdownShort($entity,
+                                     string $propertyPath,
+                                     int $length = null,
+                                     string $propertyPathOverwrite = null,
+                                     $content = null,
+                                     bool $forceReturn = null
+    )
     {
-        $this->_validate($entity);
-
-        $val = $this->getFromJSON($propertyPath, $options);
+        $val = $this->getFromJSON(
+            $propertyPathOverwrite ?: $propertyPath,
+            $content,
+            $forceReturn
+        );
 
         $this->accessor->setValue(
             $entity,
             $propertyPath,
-            StringHelper::shortenThis($val, $options['size'] ?? null)
+            StringHelper::shortenThis($val, $length)
         );
 
         return $entity;
@@ -738,923 +748,732 @@ abstract class ResourceAbstract
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-one-unidirectional
      *
-     * Owning Side
+     * Owning Side, Many-To-One, Unidirectional
      *
-     * $options = [
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
+     * Ex.
+     * User [owning side]
+     * Many Users have One Address.
+     * $user->address [ManyToOne] [targetEntity: Address] [JoinColumn]
      *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
+     * Address [no inverse side]
      *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
+     * $userResource->setOneToOneUnidirectional($user, 'address', AddressRepository, ... )
      *
-     * Please be advised that you should only allow instances of Doctrine Entities.
-     *
-     * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity.
-     *
-     * Ex. City & Country
-     * City is the owning side (this side). Many cities to one country.
-     * Country is the inverse side (other side).
-     * $options['useValue'], $repository & $thisSideProperty refer to Country.
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty Reference to the other side
-     * @param string $repository Path to the other's side repository
-     * @param array $options
-     * @return mixed
+     * @param object $owningEntity $user
+     * @param string $owningPropertyPath $user->address
+     * @param string $repository AddressRepository
+     * @param string $owningPropertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @return object
      */
-    public function setManyToOneUnidirectional($thisSideEntity,
-                                               string $thisSideProperty,
+    public function setManyToOneUnidirectional($owningEntity,
+                                               string $owningPropertyPath,
                                                string $repository,
-                                               array $options = [])
+                                               string $owningPropertyPathOverwrite = null,
+                                               $content = null,
+                                               bool $forceReturn = null
+    )
     {
-        return $this->setOneToOneUnidirectional($thisSideEntity, $thisSideProperty, $repository, $options);
+        // sets object or null
+        return $this->setOneToOneUnidirectional(
+            $owningEntity,
+            $owningPropertyPath,
+            $owningPropertyPathOverwrite,
+            $repository,
+            $content,
+            $forceReturn
+        );
     }
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-unidirectional
      *
-     * Owning Side
+     * Owning Side, One-To-One, Unidirectional
      *
-     * $options = [
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
+     * Ex.
+     * Product [owning side]
+     * One Product has One Shipment.
+     * $product->shipment [OneToOne] [targetEntity: Shipment] [JoinColumn]
      *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
+     * Shipment [no inverse side]
      *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
+     * $productResource->setOneToOneUnidirectional($product, 'shipment', ShipmentRepository, ... )
      *
-     * Please be advised that you should only allow instances of Doctrine Entities.
-     *
-     * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity.
-     *
-     * Ex. User & Cart
-     * A user can only have one cart.
-     * If Cart is the owning side, $options['useValue'], $repository & $thisSideProperty refer to Cart.
-     *
-     * There is NO Inverse Side
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty Reference to the other side
-     * @param string $repository Path to the other's side repository
-     * @param array $options
-     * @return mixed
+     * @param object $owningEntity $product
+     * @param string $owningPropertyPath $product->shipment
+     * @param string $repository ShipmentRepository
+     * @param string $owningPropertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @return object
      */
-    public function setOneToOneUnidirectional($thisSideEntity,
-                                              string $thisSideProperty,
+    public function setOneToOneUnidirectional($owningEntity,
+                                              string $owningPropertyPath,
                                               string $repository,
-                                              array $options = [])
+                                              string $owningPropertyPathOverwrite = null,
+                                              $content = null,
+                                              bool $forceReturn = null
+    )
     {
-        $this->_validate($thisSideEntity);
-
+        // sets object or null
         $this->accessor->setValue(
-            $thisSideEntity,
-            $thisSideProperty,
-            $this->getOneBy($thisSideProperty, $repository, $options)
+            $owningEntity,
+            $owningPropertyPath,
+            $this->getOneById(
+                $owningPropertyPathOverwrite ?: $owningPropertyPath,
+                $repository,
+                $content,
+                $forceReturn
+            )
         );
 
-        return $thisSideEntity;
+        return $owningEntity;
     }
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-bidirectional
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/unitofwork-associations.html
      *
-     * $options = [
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
+     * Inverse Side, One-To-One, Bidirectional
      *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
-     *
-     * Please be advised that you should only allow instances of Doctrine Entities.
-     *
-     * The owning side of a OneToOne association is the entity with the table containing the foreign key.
-     *
-     * The inverse side has to use the mappedBy attribute.
-     * mappedBy = $thisSideProperty.
-     * mappedBy is a property of the Entity which is the owning side of the relationship.
-     * $thisSideProperty is a property of the Other Entity
-     *
-     * The owning side has to use the inversedBy attribute.
-     * inversedBy = $otherSideProperty.
-     * inversedBy is a property of the Entity which is the inverse side of the relationship.
-     * $otherSideProperty is a property of This Entity
-     *
-     * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity (The Owner)
-     * $otherSideProperty refers to This Entity (The Inverse)
-     *
-     * Inverse Side
-     *
+     * The owning side of a OneToOne, Bidirectional association is the entity with the table containing the foreign key.
      * Doctrine will only check the owning side of an association for changes.
      * Changes made only to the inverse side of an association are ignored.
      *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param string $otherSideProperty
-     * @param array $options
-     * @return mixed
+     * Ex.
+     * Customer [inverse side]
+     * One Customer has One Cart.
+     * $customer->cart [OneToOne] [targetEntity: Cart] [mappedBy]
+     *
+     * Cart [owning side]
+     * One Cart has One Customer.
+     * $cart->customer [OneToOne] [targetEntity: Customer] [inversedBy] [JoinColumn]
+     *
+     * $customerResource->inverseSideSetsOneToOneBidirectional($customer, 'cart', $cart, 'customer')
+     *
+     * $cart = $this->getOneById('cart',
+     *                           CartRepository,
+     *                           'cart.id',
+     *                           $content,
+     *                           $forceReturn
+     *                          );
+     *
+     * @param object $inverseEntity $customer
+     * @param string $inversePropertyPath $customer->cart
+     * @param object|null $owningEntity $cart
+     * @param string $owningSidePropertyPath $cart->customer
+     * @return object
      */
-    public function inverseSideSetsOneToOneBidirectional($thisSideEntity,
-                                                         string $thisSideProperty,
-                                                         string $repository,
-                                                         string $otherSideProperty,
-                                                         array $options = [])
+    public function inverseSideSetsOneToOneBidirectional($inverseEntity,
+                                                         string $inversePropertyPath,
+                                                         $owningEntity = null,
+                                                         string $owningSidePropertyPath
+    )
     {
-        $this->_validate($thisSideEntity);
-
         /**
-         * here $otherSideEntity is the Owning Side Entity
-         */
-        $otherSideEntity = $this->getOneBy(
-            $thisSideProperty,
-            $repository,
-            $options
-        );
-        $this->_validate($otherSideEntity);
-
-        /**
-         * If the entity allows the association to be null and there is an old association
-         * then, set this to null. Later the owner will become the `new` Other Side Entity.
+         * If the inverse had an owner.
+         * Presuming null is allowed (else MySQL will generate an error).
+         * Detach the inverse from the old owner.
          *
-         * In case we try to set from both directions in the same time, they mutually exclude themselves
+         * @var object|null $oldOwningEntity
          */
-        $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-        if ($oldOtherSideEntity && $oldOtherSideEntity !== $otherSideEntity) {
-            $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
+        $oldOwningEntity = $this->getAccessor()->getValue($inverseEntity, $inversePropertyPath);
+        if ($oldOwningEntity) {
+            $this->accessor->setValue($oldOwningEntity, $owningSidePropertyPath, null);
         }
 
-        /**
-         * Let's make the OLD inverse side of the owning side aware about the changes we made in here
-         *
-         * In case we try to set from both directions in the same time, they mutually exclude themselves
-         */
-        $oldInverseAssociation = $this->accessor->getValue($otherSideEntity, $otherSideProperty);
-        if ($oldInverseAssociation && $oldInverseAssociation !== $thisSideEntity) {
-            $this->accessor->setValue($oldInverseAssociation, $thisSideProperty, null);
-        }
-
-        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
-
-        /**
-         * Let's make this side aware about the changes we made.
-         */
-        $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
-
-        return $thisSideEntity;
-    }
-
-    /**
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param string $otherSideProperty
-     * @param array $options
-     * @return mixed
-     */
-    public function inverseSideSetsOneToOneBidirectionalOrNull($thisSideEntity,
-                                                               string $thisSideProperty,
-                                                               string $repository,
-                                                               string $otherSideProperty,
-                                                               array $options = [])
-    {
-        $this->_validate($thisSideEntity);
-
-        /**
-         * here $otherSideEntity is the Owning Side Entity
-         */
-        $otherSideEntity = $this->getOneBy(
-            $thisSideProperty,
-            $repository,
-            $options
-        );
-
-        /**
-         * This is the case when the inverse becomes an orphan
-         */
-        if (!$otherSideEntity) {
-            $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-            if ($oldOtherSideEntity) {
-                $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
+        if ($owningEntity) {
+            /**
+             * If the new owner has an inverse.
+             * Let's make this OLD inverse aware of the changes.
+             *
+             * @var object|null $oldInverseEntity
+             */
+            $oldInverseEntity = $this->accessor->getValue($owningEntity, $owningSidePropertyPath);
+            if ($oldInverseEntity) {
+                $this->accessor->setValue($oldInverseEntity, $inversePropertyPath, null);
             }
 
-            $this->accessor->setValue($thisSideEntity, $thisSideProperty, null);
-
-            return $thisSideEntity;
+            /**
+             * Doctrine will only check the owning side of an association for changes.
+             */
+            $this->accessor->setValue($owningEntity, $owningSidePropertyPath, $inverseEntity);
         }
 
-        $options['entity'] = $options['entity'] ?? $otherSideEntity;
-        return $this->inverseSideSetsOneToOneBidirectional(
-            $thisSideEntity,
-            $thisSideProperty,
-            $repository,
-            $otherSideProperty,
-            $options
-        );
+        /**
+         * Let's make the inverse side aware about the changes that happens
+         *
+         * Sets object or null
+         */
+        $this->accessor->setValue($inverseEntity, $inversePropertyPath, $owningEntity);
+
+        return $inverseEntity;
     }
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-bidirectional
      *
-     * $options = [
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
-     *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
-     *
-     * Please be advised that you should only allow instances of Doctrine Entities
-     *
-     * Owning Side
+     * Owning Side, One-To-One, Bidirectional
      *
      * Because this is the Owning Side, Doctrine automatically manages any change.
-     * This is the simples to handle operation. Because of this, there is not too much to document.
      *
-     * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity (The Owner)
+     * Ex.
+     * Customer [inverse side]
+     * One Customer has One Cart.
+     * $customer->cart [OneToOne] [targetEntity: Cart] [mappedBy]
      *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param string $otherSideProperty
-     * @param array $options
-     * @return mixed
+     * Cart [owning side]
+     * One Cart has One Customer.
+     * $cart->customer [OneToOne] [targetEntity: Customer] [inversedBy] [JoinColumn]
+     *
+     * $cartResource->owningSideSetsOneToOneBidirectional($cart, 'customer', $customer, 'cart')
+     *
+     * $customer = $this->getOneById('customer',
+     *                               CustomerRepository,
+     *                               'customer.id',
+     *                               $content,
+     *                               $forceReturn
+     *                              );
+     *
+     * @param object $owningEntity $cart
+     * @param string $owningPropertyPath $cart->customer
+     * @param object|null $inverseEntity
+     * @param string $inverseSidePropertyPath $customer->cart
+     * @return object
      */
-    public function owningSideSetsOneToOneBidirectional($thisSideEntity,
-                                                        string $thisSideProperty,
-                                                        string $repository,
-                                                        string $otherSideProperty,
-                                                        array $options = [])
+    public function owningSideSetsOneToOneBidirectional($owningEntity,
+                                                        string $owningPropertyPath,
+                                                        $inverseEntity = null,
+                                                        string $inverseSidePropertyPath
+    )
     {
-        $this->_validate($thisSideEntity);
         /**
-         * here $otherSideEntity is the Inverse Side Entity
+         * If the owner has an inverse.
+         * Let's make this OLD inverse aware of the changes.
          */
-        $otherSideEntity = $this->getOneBy(
-            $thisSideProperty,
-            $repository,
-            $options
-        );
-        $this->_validate($otherSideEntity);
-
-        /**
-         * Let's make the OLD inverse side aware about the changes we made in here
-         *
-         * In case we try to set from both directions in the same time, they mutually exclude themselves
-         */
-        $oldInverseAssociation = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-        if ($oldInverseAssociation && $oldInverseAssociation !== $otherSideEntity) {
-            $this->accessor->setValue($oldInverseAssociation, $otherSideProperty, null);
+        $oldInverseEntity = $this->accessor->getValue($owningEntity, $owningPropertyPath);
+        if ($oldInverseEntity) {
+            $this->accessor->setValue($oldInverseEntity, $inverseSidePropertyPath, null);
         }
 
-        $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
-        /**
-         * Let's make the inverse side aware about the changes we made in here
-         */
-        $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
-
-        return $thisSideEntity;
-    }
-
-    /**
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param string $otherSideProperty
-     * @param array $options
-     * @return mixed
-     */
-    public function owningSideSetsOneToOneBidirectionalOrNull($thisSideEntity,
-                                                              string $thisSideProperty,
-                                                              string $repository,
-                                                              string $otherSideProperty,
-                                                              array $options = [])
-    {
-        $this->_validate($thisSideEntity);
-        /**
-         * here $otherSideEntity is the Inverse Side Entity
-         */
-        $otherSideEntity = $this->getOneBy(
-            $thisSideProperty,
-            $repository,
-            $options
-        );
-
-        /**
-         * If no association is set
-         */
-        if (!$otherSideEntity) {
-            $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-            if ($oldOtherSideEntity) {
-                $this->accessor->setValue($oldOtherSideEntity, $otherSideProperty, null);
-            }
-
-            $this->accessor->setValue($thisSideEntity, $thisSideProperty, null);
-
-            return $thisSideEntity;
+        if ($inverseEntity) {
+            /**
+             * Let's make the inverse side aware about the changes that happens
+             */
+            $this->accessor->setValue($inverseEntity, $inverseSidePropertyPath, $owningEntity);
         }
 
-        $options['entity'] = $options['entity'] ?? $otherSideEntity;
-        return $this->owningSideSetsOneToOneBidirectional(
-            $thisSideEntity,
-            $thisSideProperty,
-            $repository,
-            $otherSideProperty,
-            $options
-        );
+        $this->accessor->setValue($owningEntity, $owningPropertyPath, $inverseEntity);
+
+        return $owningEntity;
     }
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-bidirectional
      *
-     * Identical to $this->inverseSideAddsOneToManyBidirectional()
-     * Helps to batch process associations using the adder
+     * Inverse Side, One-To-Many, Bidirectional
      *
-     * @param $thisSideEntity
-     * @param $thisSidePropertyPath
-     * @param string $repository
-     * @param array $otherSideEntities Array of numbers is searching by column `id`
-     * @param array $options
-     * @return mixed
+     * The adder is always executed on the Inverse Side. The Owning Side only has a setter.
+     * There is no difference between a bidirectional one-to-many and a bidirectional many-to-one.
+     *
+     * Ex.
+     * Product [inverse side]
+     * One Product has Many Features.
+     * $product->features [OneToMany] [targetEntity: Feature] [mappedBy]
+     *
+     * Feature [owning side]
+     * Many Features have One Product.
+     * $feature->product [ManyToOne] [targetEntity: Product] [inversedBy] [JoinColumn]
+     *
+     * $productResource->inverseSideAddsOneToManyBidirectional($product,
+     *                                                         'addFeature',
+     *                                                         'removeFeature',
+     *                                                         $feature,
+     *                                                         'product',
+     *                                                        )
+     *
+     * $feature = $this->getOneById('feature',
+     *                              FeatureRepository,
+     *                              'feature.id',
+     *                              $content,
+     *                              $forceReturn
+     *                             );
+     *
+     * @param object $inverseEntity $product
+     * @param string $inverseAdder $product->addFeature()
+     * @param string $inverseRemover $product->removeFeature()
+     * @param object|null $owningEntity $feature
+     * @param string $owningSidePropertyPath $feature->product
+     * @return object
+     * @throws \Exception
      */
-    public function inverseSideBatchAddsOneToManyBidirectional($thisSideEntity,
-                                                               $thisSidePropertyPath,
-                                                               string $repository,
-                                                               array $otherSideEntities,
-                                                               array $options = [])
+    public function inverseSideAddsOneToManyBidirectional($inverseEntity,
+                                                          string $inverseAdder,
+                                                          string $inverseRemover,
+                                                          $owningEntity = null,
+                                                          string $owningSidePropertyPath
+    )
     {
-        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
-            $this->inverseSideAddsOneToManyBidirectional(
-                $thisSideEntity,
-                $thisSidePropertyPath,
-                $repository,
-                array_merge($options, [
-                    'entity' => $otherSideEntity
-                ])
+
+        if (!$owningEntity) {
+            throw new \Exception(
+                'Expecting Owning Entity when adding OneToMany, Bidirectional. None provided.'
             );
         }
 
-        return $thisSideEntity;
-    }
-
-    /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-bidirectional
-     *
-     * The adder is always executed on the Inverse Side. The Owning Side only has a setter.
-     *
-     * $options = [
-     *  thisSideAdder       required    string
-     *  otherSideProperty   required    string   This is the property representing This Entity (mappedBy) on the owning side.
-     *
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
-     *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
-     *
-     * In case $otherSideProperty confuses you
-     * $otherSideProperty = mappedBy on the Inverse Side
-     * $otherSideProperty is a property on the Owning Side
-     * If you are still confused, just read the example online. Check for the mappedBy="..."; from here gets clear.
-     *
-     * $options['useValue'], $repository & $otherSideEntity refer to the Other Entity (The Owner)
-     *
-     * @param $thisSideEntity           mixed
-     * @param $thisSidePropertyPath     string
-     * @param $repository               string
-     * @param array $options
-     * @return mixed
-     */
-    public function inverseSideAddsOneToManyBidirectional($thisSideEntity,
-                                                          $thisSidePropertyPath,
-                                                          string $repository,
-                                                          array $options = [])
-    {
-        $this->_validate($thisSideEntity);
-
-        $otherSideEntity = $this->getOneBy($thisSidePropertyPath, $repository, $options);
-        $this->_validate($otherSideEntity);
-
         /**
-         * We call the adder to make the Inverse Side aware of any change we made.
-         * For this to be persisted, we actually have to call the owning side which will happen bellow.
-         */
-        $thisSideEntity->{$options['thisSideAdder']}($otherSideEntity);
-
-        /**
-         * Because Doctrine will only check the owning side of an association for changes;
-         * Let's make Doctrine aware of the change by changing the owning side.
-         */
-        $this->accessor->setValue($otherSideEntity, $options['otherSideProperty'], $thisSideEntity);
-
-        return $thisSideEntity;
-    }
-
-    /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-bidirectional
-     *
-     * It is your job to get the entities using $this->getFromJSON()
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param string $otherSideProperty
-     * @param array $otherSideEntities
-     * @return mixed
-     */
-    public function inverseSideSetsOneToManyBidirectional($thisSideEntity,
-                                                          string $thisSideProperty,
-                                                          string $repository,
-                                                          string $otherSideProperty,
-                                                          array $otherSideEntities)
-    {
-        $this->_validate($thisSideEntity);
-
-        /**
-         * remove old associations
+         * If the owner has an inverse.
+         * Let's make this OLD inverse aware of the changes.
          *
-         * NO need to call the remover on the inverse side.
-         * We will later call the setter and this overwrites all associations.
+         * @var object|null $oldInverseEntity
          */
-        foreach ($this->getAccessor()->getValue($thisSideEntity, $thisSideProperty) ?: [] as $otherSideEntity) {
-            $this->accessor->setValue($otherSideEntity, $otherSideProperty, null);
+        $oldInverseEntity = $this->accessor->getValue($owningEntity, $owningSidePropertyPath);
+        if ($oldInverseEntity) {
+            $oldInverseEntity->{$inverseRemover}($owningEntity);
         }
 
-        $otherSideEntities = $this->getManyById($repository, $otherSideEntities);
+        /**
+         * Because Doctrine will only check the owning side of an association for changes.
+         */
+        $this->accessor->setValue($owningEntity, $owningSidePropertyPath, $inverseEntity);
+
+        /**
+         * Let's make the inverse side aware about the changes that happens
+         */
+        $inverseEntity->{$inverseAdder}($owningEntity);
+
+        return $inverseEntity;
+    }
+
+    /**
+     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-bidirectional
+     *
+     * Inverse Side, One-To-Many, Bidirectional
+     *
+     * Ex.
+     * Product [inverse side]
+     * One Product has Many Features.
+     * $product->features [OneToMany] [targetEntity: Feature] [mappedBy]
+     *
+     * Feature [owning side]
+     * Many Features have One Product.
+     * $feature->product [ManyToOne] [targetEntity: Product] [inversedBy] [JoinColumn]
+     *
+     * $productResource->inverseSideSetsOneToManyBidirectional($product,
+     *                                                         'features',
+     *                                                         'removeFeatures',
+     *                                                         $features,
+     *                                                         'product'
+     *                                                        )
+     *
+     * $features = $this->getManyById(FeatureRepository,
+     *                                $this->getFromJSON('features',
+     *                                                   $content,
+     *                                                   $forceReturn
+     *                                                  )
+     *                               )
+     *
+     * @param object $inverseEntity $product
+     * @param string $inversePropertyPath $product->features
+     * @param string $inverseRemover $product->removeFeature()
+     * @param array $owningEntities $features
+     * @param string $owningSidePropertyPath $feature->product
+     * @return object
+     */
+    public function inverseSideSetsOneToManyBidirectional($inverseEntity,
+                                                          string $inversePropertyPath,
+                                                          string $inverseRemover,
+                                                          array $owningEntities = [],
+                                                          string $owningSidePropertyPath
+    )
+    {
+        /**
+         * Let's make the OLD owning entities aware about the changes that happens.
+         * This are now orphans.
+         */
+        foreach ($this->getAccessor()->getValue(
+            $inverseEntity, $inversePropertyPath) ?: [] as $oldOwningEntity) {
+            $this->accessor->setValue(
+                $oldOwningEntity,
+                $owningSidePropertyPath,
+                null
+            );
+        }
+
+        // make the owning side aware of the changes
+        foreach ($owningEntities as $owningEntity) {
+            /**
+             * If the NEW owners have an inverse.
+             * Let's make this OLD inverse aware of the changes.
+             *
+             * @var object|null $oldInverseEntity
+             */
+            $oldInverseEntity = $this->getAccessor()->getValue(
+                $owningEntity,
+                $owningSidePropertyPath
+            );
+            if ($oldInverseEntity) {
+                $oldInverseEntity->{$inverseRemover}($owningEntity);
+            }
+
+            /**
+             * Because Doctrine will only check the owning side of an association for changes.
+             */
+            $this->accessor->setValue(
+                $owningEntity,
+                $owningSidePropertyPath,
+                $inverseEntity
+            );
+        }
 
         // set the associations
         $this->accessor->setValue(
-            $thisSideEntity,
-            $thisSideProperty,
-            $otherSideEntities
+            $inverseEntity,
+            $inversePropertyPath,
+            $owningEntities
         );
 
-        // make the owning side aware of the changes
-        foreach ($otherSideEntities as $otherSideEntity) {
-            $this->accessor->setValue($otherSideEntity, $otherSideProperty, $thisSideEntity);
-        }
 
-        return $thisSideEntity;
-    }
-
-    /**
-     * @param string $repository
-     * @param array $entities
-     * @return array
-     */
-    public function getManyById(string $repository, array $entities): array
-    {
-        return $this->getManyBy($repository, $entities);
+        return $inverseEntity;
     }
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-bidirectional
      *
-     * $options = [
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
+     * Owning Side, One-To-Many, Bidirectional
      *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
+     * Ex.
+     * Product [inverse side]
+     * One Product has Many Features.
+     * $product->features [OneToMany] [targetEntity: Feature] [mappedBy]
      *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
+     * Feature [owning side]
+     * Many Features have One Product.
+     * $feature->product [ManyToOne] [targetEntity: Product] [inversedBy] [JoinColumn]
      *
-     * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity (The Inverse)
+     * $productResource->owningSideSetsOneToManyBidirectional($feature,
+     *                                                        'product',
+     *                                                        $product,
+     *                                                        'addFeature',
+     *                                                        'removeFeature'
+     *                                                       )
      *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param string $otherSideAdder
-     * @param string $otherSideRemover
-     * @param array $options
-     * @return mixed
+     * $product = $this->getOneById('product',
+     *                              ProductRepository,
+     *                              'product.id',
+     *                              $content,
+     *                              $forceReturn
+     *                             );
+     *
+     * @param object $owningEntity $feature
+     * @param string $owningPropertyPath $feature->product
+     * @param object|null $inverseEntity $product
+     * @param string $inverseAdder $product->addFeature()
+     * @param string $inverseRemover $product->removeFeature()
+     * @return object
      */
-    public function owningSideSetsOneToManyBidirectional($thisSideEntity,
-                                                         string $thisSideProperty,
-                                                         string $repository,
-                                                         string $otherSideAdder,
-                                                         string $otherSideRemover,
-                                                         array $options = [])
+    public function owningSideSetsOneToManyBidirectional($owningEntity,
+                                                         string $owningPropertyPath,
+                                                         $inverseEntity = null,
+                                                         string $inverseAdder,
+                                                         string $inverseRemover
+    )
     {
-        $this->_validate($thisSideEntity);
+        /**
+         * If the owning entity has an inverse.
+         * Let's make this OLD inverse aware of the change.
+         *
+         * @var object|null $oldInverseEntity
+         */
+        $oldInverseEntity = $this->getAccessor()->getValue($owningEntity, $owningPropertyPath);
+        if ($oldInverseEntity) {
+            $oldInverseEntity->{$inverseRemover}($owningEntity);
+        }
 
-        $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
-        $this->_validate($otherSideEntity);
-
-        // remove self from past relationships
-        $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-        if ($oldOtherSideEntity) {
-            $oldOtherSideEntity->{$otherSideRemover}($thisSideEntity);
+        if ($inverseEntity) {
+            // make the inverse side aware of the change
+            $inverseEntity->{$inverseAdder}($owningEntity);
         }
 
         // set the association
-        $this->accessor->setValue($thisSideEntity, $thisSideProperty, $otherSideEntity);
+        $this->getAccessor()->setValue($owningEntity, $owningPropertyPath, $inverseEntity);
 
-        // make the inverse side aware of the change
+        return $owningEntity;
+    }
+
+    /**
+     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
+     *
+     * A unidirectional one-to-many association can be mapped through a join table.
+     * From Doctrine’s point of view, it is simply mapped as a unidirectional many-to-many
+     * whereby a unique constraint on one of the join columns enforces the one-to-many cardinality.
+     *
+     * Inverse Side, One-To-Many, Unidirectional
+     * Foreign Key sets in the Join Table
+     *
+     * Ex.
+     * User [inverse side]
+     * Many User have Many PhoneNumbers.
+     * $user->phoneNumbers [ManyToMany] [targetEntity: PhoneNumber]
+     *
+     * [JoinTable]
+     *
+     * PhoneNumbers [no owning side]
+     *
+     * $userResource->addOneToManyUnidirectional($user,
+     *                                           'addPhoneNumber',
+     *                                           $phoneNumber
+     *                                          )
+     *
+     * $phoneNumber = $this->getOneById('phoneNumber',
+     *                                  PhoneRepository,
+     *                                  'phoneNumber.id',
+     *                                  $content,
+     *                                  $forceReturn
+     *                                 );
+     *
+     * @param $inverseEntity $user
+     * @param string $inverseAdder $user->addPhoneNumber()
+     * @param object|null $otherSideEntity $phoneNumber
+     * @return object
+     * @throws \Exception
+     */
+    public function addOneToManyUnidirectional($inverseEntity,
+                                               string $inverseAdder,
+                                               $otherSideEntity = null
+    )
+    {
+        if ($otherSideEntity) {
+            throw new \Exception(
+                'Expecting Other Side Entity when adding OneToMany, Unidirectional. None provided.'
+            );
+        }
+
+        $inverseEntity->{$inverseAdder}($otherSideEntity);
+
+        return $inverseEntity;
+    }
+
+    /**
+     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
+     *
+     * A unidirectional one-to-many association can be mapped through a join table.
+     * From Doctrine’s point of view, it is simply mapped as a unidirectional many-to-many
+     * whereby a unique constraint on one of the join columns enforces the one-to-many cardinality.
+     *
+     * Inverse Side, One-To-Many, Unidirectional
+     * Foreign Key sets in the Join Table
+     *
+     * Ex.
+     * User [inverse side]
+     * Many User have Many PhoneNumbers.
+     * $user->phoneNumbers [ManyToMany] [targetEntity: PhoneNumber]
+     *
+     * [JoinTable]
+     *
+     * PhoneNumbers [no owning side]
+     *
+     * $userResource->setOneToManyUnidirectional($user,
+     *                                           'phoneNumbers',
+     *                                           $phoneNumbers
+     *                                          )
+     *
+     * $features = $this->getManyById(PhoneNumberRepository,
+     *                                $this->getFromJSON('phoneNumbers',
+     *                                                   $content,
+     *                                                   $forceReturn
+     *                                                  )
+     *                               )
+     *
+     * @param $inverseEntity $user
+     * @param string $inversePropertyPath $user->phoneNumbers
+     * @param array $otherSideEntities $phoneNumbers
+     * @return mixed
+     */
+    public function setOneToManyUnidirectional($inverseEntity,
+                                               string $inversePropertyPath,
+                                               array $otherSideEntities)
+    {
+        // set the associations
+        $this->accessor->setValue(
+            $inverseEntity,
+            $inversePropertyPath,
+            $otherSideEntities
+        );
+
+        return $inverseEntity;
+    }
+
+    /**
+     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-many-bidirectional
+     *
+     * Many-To-Many, Bidirectional
+     * No differentiation between inverse or owning side.
+     *
+     * Ex.
+     * User [owning side] [this side]
+     * Many Users have Many Groups.
+     * $user->groups [ManyToMany] [targetEntity: Group] [inversedBy]
+     *
+     * [JoinTable]
+     *
+     * Group [inverse side] [other side]
+     * Many Groups have Many Users.
+     * $group->users [ManyToMany] [targetEntity: User] [mappedBy]
+     *
+     * $userResource->addManyToManyBidirectional($user,
+     *                                           'addGroup',
+     *                                           $group,
+     *                                           'addUser'
+     *                                          )
+     *
+     * $group = $this->getOneById('group',
+     *                            GroupRepository,
+     *                            'group.id',
+     *                            $content,
+     *                            $forceReturn
+     *                           );
+     *
+     * @param $thisSideEntity $user
+     * @param string $thisSideAdder $user->addGroup()
+     * @param object|null $otherSideEntity $group
+     * @param string $otherSideAdder $group->addUser()
+     * @return object
+     * @throws \Exception
+     */
+    public function addManyToManyBidirectional($thisSideEntity,
+                                               string $thisSideAdder,
+                                               $otherSideEntity = null,
+                                               string $otherSideAdder
+    )
+    {
+        if ($otherSideEntity) {
+            throw new \Exception(
+                'Expecting Other Side Entity when adding ManyToMany, Bidirectional. None provided.');
+        }
+
+        $thisSideEntity->{$thisSideAdder}($otherSideEntity);
         $otherSideEntity->{$otherSideAdder}($thisSideEntity);
 
         return $thisSideEntity;
     }
 
     /**
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param string $otherSideAdder
-     * @param string $otherSideRemover
-     * @param array $options
-     * @return mixed
-     */
-    public function owningSideSetsOneToManyBidirectionalOrNull($thisSideEntity,
-                                                               string $thisSideProperty,
-                                                               string $repository,
-                                                               string $otherSideAdder,
-                                                               string $otherSideRemover,
-                                                               array $options = [])
-    {
-        $this->_validate($thisSideEntity);
-
-        $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
-        if (!$otherSideEntity) {
-            // remove self from past relationships
-            $oldOtherSideEntity = $this->accessor->getValue($thisSideEntity, $thisSideProperty);
-            if ($oldOtherSideEntity) {
-                $oldOtherSideEntity->{$otherSideRemover}($thisSideEntity);
-            }
-
-            $this->accessor->setValue($thisSideEntity, $thisSideProperty, null);
-            return $thisSideEntity;
-        }
-
-        $options['entity'] = $options['entity'] ?? $otherSideEntity;
-        return $this->owningSideSetsOneToManyBidirectional(
-            $thisSideEntity,
-            $thisSideProperty,
-            $repository,
-            $otherSideAdder,
-            $otherSideRemover,
-            $options
-        );
-    }
-
-    /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
-     *
-     * Identical to $this->addOneToManyUnidirectional()
-     * Helps to batch process associations using the adder
-     *
-     * It is your job to get the entities using $this->getFromJSON()
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array $otherSideEntities Array of numbers; this searches by column `id`
-     * @param array $options
-     */
-    public function batchAddOneToManyUnidirectional($thisSideEntity,
-                                                    string $thisSideProperty,
-                                                    string $repository,
-                                                    array $otherSideEntities,
-                                                    array $options = []): void
-    {
-        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
-            $this->addOneToManyUnidirectional(
-                $thisSideEntity,
-                $thisSideProperty,
-                $repository,
-                array_merge($options, [
-                    'entity' => $otherSideEntity
-                ])
-            );
-        }
-    }
-
-    /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
-     *
-     * $options = [
-     *  thisSideAdder   required   string
-     *
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
-     *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
-     *
-     * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array $options
-     */
-    public function addOneToManyUnidirectional($thisSideEntity,
-                                               string $thisSideProperty,
-                                               string $repository,
-                                               array $options = []): void
-    {
-        $this->_validate($thisSideEntity);
-
-        $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
-        $this->_validate($otherSideEntity);
-
-        $thisSideEntity->{$options['thisSideAdder']}($otherSideEntity);
-    }
-
-    /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
-     *
-     * It is your job to get the entities using $this->getFromJSON()
-     *
-     * todo : test that old orphan relationships are managed (removed) by Doctrine. If not, handle them (manually remove).
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array|ArrayCollection $otherSideEntities
-     * @return mixed
-     */
-    public function setOneToManyUnidirectional($thisSideEntity,
-                                               string $thisSideProperty,
-                                               string $repository,
-                                               array $otherSideEntities)
-    {
-        $this->_validate($thisSideEntity);
-
-        $otherSideEntities = new ArrayCollection($this->getManyById($repository, $otherSideEntities));
-
-        // set the associations
-        $this->accessor->setValue(
-            $thisSideEntity,
-            $thisSideProperty,
-            $otherSideEntities
-        );
-
-        return $thisSideEntity;
-    }
-
-    /**
-     * Identical to $this->addManyToManyBidirectional()
-     * Helps to batch process associations using the adder
-     *
-     * It is your job to get the entities using $this->getFromJSON()
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array $otherSideEntities
-     * @param array $options
-     */
-    public function batchAddManyToManyBidirectional($thisSideEntity,
-                                                    string $thisSideProperty,
-                                                    string $repository,
-                                                    array $otherSideEntities,
-                                                    array $options = []): void
-    {
-        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
-            $this->addManyToManyBidirectional(
-                $thisSideEntity,
-                $thisSideProperty,
-                $repository,
-                array_merge($options, [
-                    'entity' => $otherSideEntity
-                ])
-            );
-        }
-    }
-
-    /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-many-bidirectional
      *
-     * IMPORTANT! We don't differentiate between inverse and owning side because we want to trigger the event on each side
-     * so that they both (the sides) are aware about changes to be made. The OneToMany case is more specific and this is
-     * why we differentiate between the inverse and owning when setting associations.
+     * Many-To-Many, Bidirectional
+     * No differentiation between inverse or owning side.
      *
-     * $options = [
-     *  thisSideAdder       required   string
-     *  otherSideAdder      required   string
+     * Ex.
+     * User [owning side] [this side]
+     * Many Users have Many Groups.
+     * $user->groups [ManyToMany] [targetEntity: Group] [inversedBy]
      *
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
+     * [JoinTable]
      *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
+     * Group [inverse side] [other side]
+     * Many Groups have Many Users.
+     * $group->users [ManyToMany] [targetEntity: User] [mappedBy]
      *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
+     * $userResource->setManyToManyBidirectional($user,
+     *                                           'groups',
+     *                                           $groups,
+     *                                           'removeUser',
+     *                                           'addUser'
+     *                                          )
      *
-     * $options['useValue'], $repository & $thisSideProperty refer to the Other Entity
+     * $groups = $this->getManyById(GroupRepository,
+     *                              $this->getFromJSON('groups',
+     *                                                 $content,
+     *                                                 $forceReturn
+     *                                                )
+     *                             )
      *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array $options
-     * @return mixed
-     */
-    public function addManyToManyBidirectional($thisSideEntity,
-                                               string $thisSideProperty,
-                                               string $repository,
-                                               array $options = [])
-    {
-        $this->_validate($thisSideEntity);
-
-        $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
-        $this->_validate($otherSideEntity);
-
-        $thisSideEntity->{$options['thisSideAdder']}($otherSideEntity);
-        $otherSideEntity->{$options['otherSideAdder']}($thisSideEntity);
-
-        return $thisSideEntity;
-    }
-
-    /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-many-bidirectional
-     *
-     * IMPORTANT! We don't differentiate between inverse and owning side because we want to trigger the event on each side
-     * so that they both (the sides) are aware about changes to be made. The OneToMany case is more specific and this is
-     * why we differentiate between the inverse and owning when setting associations.
-     *
-     * $options = [
-     *  thisSideGetter      required   string
-     *  otherSideRemover    required   string
-     *  otherSideAdder      required   string
-     * ]
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array|ArrayCollection $otherSideEntities
-     * @param array $options
-     * @return mixed
+     * @param object $thisSideEntity $user
+     * @param string $thisSidePropertyPath $user->groups
+     * @param array $otherSideEntities $groups
+     * @param string $otherSideRemover $group->removeUser()
+     * @param string $otherSideAdder $group->addUser()
+     * @return object
      */
     public function setManyToManyBidirectional($thisSideEntity,
-                                               string $thisSideProperty,
-                                               string $repository,
-                                               array $otherSideEntities,
-                                               array $options = [])
+                                               string $thisSidePropertyPath,
+                                               array $otherSideEntities = [],
+                                               string $otherSideRemover,
+                                               string $otherSideAdder
+    )
     {
-        $this->_validate($thisSideEntity);
-
-        $otherSideEntities = new ArrayCollection($this->getManyById($repository, $otherSideEntities));
-
         /**
-         * remove all current associations
-         * we can use a check and verify if $entities contain $otherSideEntity
-         * and by doing so avoid removing associations that don't change
-         * for now we don't do it even if maybe by doing it will be faster
-         * if is or not faster can only be seen with a benchmark.
+         * Let's make any OLD associations aware of the change
          */
-        foreach ($thisSideEntity->{$options['thisSideGetter']}() as $otherSideEntity) {
-            $otherSideEntity->{$options['otherSideRemover']}($thisSideEntity);
+        $oldOtherSideEntities = $this->getAccessor()->getValue($thisSideEntity, $thisSidePropertyPath);
+        foreach ($oldOtherSideEntities ?: [] as $oldOtherSideEntity) {
+            $oldOtherSideEntity->{$otherSideRemover}($thisSideEntity);
         }
 
         // set the associations on this side
         $this->accessor->setValue(
             $thisSideEntity,
-            $thisSideProperty,
+            $thisSidePropertyPath,
             $otherSideEntities
         );
 
         // let make aware the other side about the update
         foreach ($otherSideEntities as $otherSideEntity) {
-            $otherSideEntity->{$options['otherSideAdder']}($thisSideEntity);
+            $otherSideEntity->{$otherSideAdder}($thisSideEntity);
         }
 
         return $thisSideEntity;
     }
 
     /**
-     * Identical to $this->addManyToManyBidirectional()
-     * Helps to batch process associations using the adder
-     *
-     * It is your job to get the entities using $this->getFromJSON()
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array $otherSideEntities
-     * @param array $options
-     */
-    public function batchRemoveAssociations($thisSideEntity,
-                                            string $thisSideProperty,
-                                            string $repository,
-                                            array $otherSideEntities,
-                                            array $options = []): void
-    {
-        foreach ($this->getManyBy($repository, $otherSideEntities) as $otherSideEntity) {
-            $this->removeAssociation(
-                $thisSideEntity,
-                $thisSideProperty,
-                $repository,
-                array_merge($options, [
-                    'entity' => $otherSideEntity
-                ])
-            );
-        }
-    }
-
-    /**
-     * $options = [
-     *  thisSideRemover     required    string
-     *  otherSideRemover    optional    string
-     *  otherSideProperty   optional    string
-     *
-     *  ...used by ThrowableHelper::NotInstanceOf
-     *  instanceOf      required   string   Path to class (class name), class instance, \stdClass() instance.
-     *
-     *  ...used by $this->getFromJSON() inside $this->getOneBy()
-     *  propertyPath    optional    string
-     *  useValue        optional    mixed
-     *  forceReturn     optional    boolean
-     *
-     *  ...Used by $this->getOneBy() to returning the provided entity
-     *  entity          optional    Doctrine Entity
-     *  findBy          optional    string              Defaults to the column name `id`
-     * ]
-     *
-     * @param $thisSideEntity
-     * @param string $thisSideProperty
-     * @param string $repository
-     * @param array $options
-     * @return mixed
-     * @throws \Throwable
+     * @param object $thisSideEntity $user|$product
+     * @param string $thisSideRemover $user->removeGroup()|$product->removeFeature()
+     * @param object|null $otherSideEntity $group|$feature
+     * @param string|null $otherSideRemover $group->removeUser()
+     * @param string|null $otherSidePropertyPath $feature->product
+     * @return object
+     * @throws \Exception
      */
     public function removeAssociation($thisSideEntity,
-                                      string $thisSideProperty,
-                                      string $repository,
-                                      array $options = [])
+                                      string $thisSideRemover,
+                                      $otherSideEntity = null,
+                                      string $otherSideRemover = null,
+                                      string $otherSidePropertyPath = null
+    )
     {
-        if (array_key_exists('otherSideProperty', $options) && array_key_exists('otherSideRemover', $options)) {
-            throw new \Error('Ambiguous operation. There is no way to differentiate between OneToMany & ManyToMany.');
+        if (!$otherSideRemover && !$otherSidePropertyPath) {
+            throw new \Exception(
+                'Unable to remove. Missing both Other Side Remover and Other Side Property Path'
+            );
         }
 
-        $this->_validate($thisSideEntity);
+        if ($otherSideRemover && $otherSidePropertyPath) {
+            throw new \Exception(
+                'Ambiguous operation. There is no way to differentiate between OneToMany and ManyToMany.'
+            );
+        }
 
-        $otherSideEntity = $this->getOneBy($thisSideProperty, $repository, $options);
-        $this->_validate($otherSideEntity);
+        if (!$otherSideEntity) {
+            throw new \Exception('Unable to continue. You have to provide an Other Side Entity. NULL received.');
+        }
 
         // remove the association
-        $thisSideEntity->{$options['thisSideRemover']}($otherSideEntity);
+        $thisSideEntity->{$thisSideRemover}($otherSideEntity);
 
-        // in case OneToMany expect otherSideProperty
-        if (array_key_exists('otherSideProperty', $options)) {
-            $this->accessor->setValue($otherSideEntity, $options['otherSideProperty'], null);
+        // in case ManyToMany expect $otherSideRemover
+        // make the Other Side aware of the change
+        if ($otherSideRemover) {
+            $otherSideEntity->{$otherSideRemover}($thisSideEntity);
 
             return $thisSideEntity;
         }
 
-        // in case ManyToMany expect otherSideRemover
-        if (array_key_exists('otherSideRemover', $options)) {
-            $otherSideEntity->{$options['otherSideRemover']}($thisSideEntity);
+        // in case OneToMany expect $otherSidePropertyPath
+        // make the Other Side aware of the change
+        if ($otherSidePropertyPath) {
+            $this->accessor->setValue($otherSideEntity, $otherSidePropertyPath, null);
         }
 
         return $thisSideEntity;

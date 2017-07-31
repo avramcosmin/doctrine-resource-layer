@@ -1,4 +1,4 @@
 /*
 !.gitignore
 !ResourceAbstract.php
-!ResourceAbstractInterface.php
+!ResourceInterface.php
