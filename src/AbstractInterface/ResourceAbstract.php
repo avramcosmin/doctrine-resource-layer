@@ -15,6 +15,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return null|mixed
+     * @throws \Throwable
      */
     public function getFromJSON(string $propertyPath,
                                 $content = null,
@@ -42,6 +43,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function set($entity,
                         string $propertyPath,
@@ -71,6 +73,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object|null
+     * @throws \Throwable
      */
     public function getOneBy(string $propertyPath,
                              string $repository,
@@ -98,6 +101,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object|null
+     * @throws \Throwable
      */
     public function getOneById(string $propertyPath,
                                string $repository,
@@ -121,6 +125,7 @@ abstract class ResourceAbstract
      * @param array $values
      * @param string $col
      * @return array
+     * @throws \Throwable
      */
     public function getManyBy(string $repository,
                               array $values,
@@ -138,6 +143,7 @@ abstract class ResourceAbstract
      * @param string $repository
      * @param array $values
      * @return array
+     * @throws \Throwable
      */
     public function getManyById(string $repository,
                                 array $values
@@ -156,6 +162,7 @@ abstract class ResourceAbstract
      *
      * @param array $arr
      * @return array
+     * @throws \Throwable
      */
     public function filterEntitiesForIds(array $arr): array
     {
@@ -181,6 +188,7 @@ abstract class ResourceAbstract
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setFloat($entity,
                              string $propertyPath,
@@ -247,6 +255,7 @@ abstract class ResourceAbstract
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setDouble($entity,
                               string $propertyPath,
@@ -276,6 +285,7 @@ abstract class ResourceAbstract
      * @param string|float|null $val
      * @param bool $isNullAllowed
      * @return null|float
+     * @throws \Throwable
      */
     public function getDouble($val, bool $isNullAllowed = true):? float
     {
@@ -308,6 +318,7 @@ abstract class ResourceAbstract
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setInt($entity,
                            string $propertyPath,
@@ -378,6 +389,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setOrUseDefault($entity,
                                     string $propertyPath,
@@ -408,6 +420,7 @@ abstract class ResourceAbstract
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setNumeric($entity,
                                string $propertyPath,
@@ -437,7 +450,7 @@ abstract class ResourceAbstract
      * @param $val
      * @param bool $isNullAllowed
      * @return mixed
-     * @throws \Error
+     * @throws \Throwable
      */
     public function getNumeric($val, bool $isNullAllowed = true)
     {
@@ -463,6 +476,7 @@ abstract class ResourceAbstract
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setDate($entity,
                             string $propertyPath,
@@ -492,7 +506,7 @@ abstract class ResourceAbstract
      * @param $val
      * @param bool $isNullAllowed
      * @return \DateTime|null
-     * @throws \Error
+     * @throws \Throwable
      */
     public function getDate($val, $isNullAllowed = true):? \DateTime
     {
@@ -526,7 +540,7 @@ abstract class ResourceAbstract
      * @param $entity
      * @param string $propertyPath
      * @return mixed
-     * @throws \Error
+     * @throws \Throwable
      */
     public function setNegation($entity, string $propertyPath)
     {
@@ -552,6 +566,7 @@ abstract class ResourceAbstract
      * @param $objectOrArray
      * @param string|null $propertyPathOverwrite
      * @return mixed
+     * @throws \Throwable
      */
     public function setBoolIfObjectOrArrayHas($entity,
                                               string $propertyPath,
@@ -580,6 +595,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setBool($entity,
                             string $propertyPath,
@@ -615,6 +631,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdown($entity,
                                 string $propertyPath,
@@ -662,6 +679,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdownRaw($entity,
                                    string $propertyPath,
@@ -690,6 +708,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdownHTML($entity,
                                     string $propertyPath,
@@ -721,6 +740,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdownShort($entity,
                                      string $propertyPath,
@@ -766,6 +786,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object
+     * @throws \Throwable
      */
     public function setManyToOneUnidirectional($owningEntity,
                                                string $owningPropertyPath,
@@ -807,6 +828,7 @@ abstract class ResourceAbstract
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object
+     * @throws \Throwable
      */
     public function setOneToOneUnidirectional($owningEntity,
                                               string $owningPropertyPath,
@@ -864,6 +886,7 @@ abstract class ResourceAbstract
      * @param object|null $owningEntity $cart
      * @param string $owningSidePropertyPath $cart->customer
      * @return object
+     * @throws \Throwable
      */
     public function inverseSideSetsOneToOneBidirectional($inverseEntity,
                                                          string $inversePropertyPath,
@@ -941,6 +964,7 @@ abstract class ResourceAbstract
      * @param object|null $inverseEntity
      * @param string $inverseSidePropertyPath $customer->cart
      * @return object
+     * @throws \Throwable
      */
     public function owningSideSetsOneToOneBidirectional($owningEntity,
                                                         string $owningPropertyPath,
@@ -1006,7 +1030,7 @@ abstract class ResourceAbstract
      * @param object|null $owningEntity $feature
      * @param string $owningSidePropertyPath $feature->product
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function inverseSideAddsOneToManyBidirectional($inverseEntity,
                                                           string $inverseAdder,
@@ -1080,6 +1104,7 @@ abstract class ResourceAbstract
      * @param array $owningEntities $features
      * @param string $owningSidePropertyPath $feature->product
      * @return object
+     * @throws \Throwable
      */
     public function inverseSideSetsOneToManyBidirectional($inverseEntity,
                                                           string $inversePropertyPath,
@@ -1172,6 +1197,7 @@ abstract class ResourceAbstract
      * @param string $inverseAdder $product->addFeature()
      * @param string $inverseRemover $product->removeFeature()
      * @return object
+     * @throws \Throwable
      */
     public function owningSideSetsOneToManyBidirectional($owningEntity,
                                                          string $owningPropertyPath,
@@ -1237,7 +1263,7 @@ abstract class ResourceAbstract
      * @param string $inverseAdder $user->addPhoneNumber()
      * @param object|null $otherSideEntity $phoneNumber
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function addOneToManyUnidirectional($inverseEntity,
                                                string $inverseAdder,
@@ -1290,6 +1316,7 @@ abstract class ResourceAbstract
      * @param string $inversePropertyPath $user->phoneNumbers
      * @param array $otherSideEntities $phoneNumbers
      * @return mixed
+     * @throws \Throwable
      */
     public function setOneToManyUnidirectional($inverseEntity,
                                                string $inversePropertyPath,
@@ -1340,7 +1367,7 @@ abstract class ResourceAbstract
      * @param object|null $otherSideEntity $group
      * @param string $otherSideAdder $group->addUser()
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function addManyToManyBidirectional($thisSideEntity,
                                                string $thisSideAdder,
@@ -1396,6 +1423,7 @@ abstract class ResourceAbstract
      * @param string $otherSideRemover $group->removeUser()
      * @param string $otherSideAdder $group->addUser()
      * @return object
+     * @throws \Throwable
      */
     public function setManyToManyBidirectional($thisSideEntity,
                                                string $thisSidePropertyPath,
@@ -1434,7 +1462,7 @@ abstract class ResourceAbstract
      * @param string|null $otherSideRemover $group->removeUser()
      * @param string|null $otherSidePropertyPath $feature->product
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function removeAssociation($thisSideEntity,
                                       string $thisSideRemover,

@@ -9,6 +9,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return null|mixed
+     * @throws \Throwable
      */
     public function getFromJSON(string $propertyPath, $content = null, bool $forceReturn = null);
 
@@ -19,6 +20,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function set($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -30,6 +32,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object|null
+     * @throws \Throwable
      */
     public function getOneBy(string $propertyPath, string $repository, string $col, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -40,6 +43,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object|null
+     * @throws \Throwable
      */
     public function getOneById(string $propertyPath, string $repository, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -48,6 +52,7 @@ interface ResourceInterface
      * @param array $values
      * @param string $col
      * @return array
+     * @throws \Throwable
      */
     public function getManyBy(string $repository, array $values, string $col): array;
 
@@ -55,6 +60,7 @@ interface ResourceInterface
      * @param string $repository
      * @param array $values
      * @return array
+     * @throws \Throwable
      */
     public function getManyById(string $repository, array $values): array;
 
@@ -64,6 +70,7 @@ interface ResourceInterface
      *
      * @param array $arr
      * @return array
+     * @throws \Throwable
      */
     public function filterEntitiesForIds(array $arr): array;
 
@@ -75,6 +82,7 @@ interface ResourceInterface
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setFloat($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null, bool $isNullAllowed = true);
 
@@ -84,13 +92,13 @@ interface ResourceInterface
      * @return null|float
      * @throws \Throwable
      */
-    public function getFloat($val, bool $isNullAllowed = true): float;
+    public function getFloat($val, bool $isNullAllowed = true):? float;
 
     /**
      * @param string|float $val
      * @return null|float
      */
-    public function isFloat($val): float;
+    public function isFloat($val):? float;
 
     /**
      * @param $entity
@@ -100,6 +108,7 @@ interface ResourceInterface
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setDouble($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null, bool $isNullAllowed = true);
 
@@ -107,8 +116,9 @@ interface ResourceInterface
      * @param string|float|null $val
      * @param bool $isNullAllowed
      * @return null|float
+     * @throws \Throwable
      */
-    public function getDouble($val, bool $isNullAllowed = true): float;
+    public function getDouble($val, bool $isNullAllowed = true):? float;
 
     /**
      * @param $val
@@ -117,7 +127,7 @@ interface ResourceInterface
      * @return null|float
      * @throws \Throwable
      */
-    public function getWithDecimals($val, int $decimals, bool $isNullAllowed = true): float;
+    public function getWithDecimals($val, int $decimals, bool $isNullAllowed = true):? float;
 
     /**
      * @param $entity
@@ -127,6 +137,7 @@ interface ResourceInterface
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setInt($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null, bool $isNullAllowed = true);
 
@@ -146,7 +157,7 @@ interface ResourceInterface
      * @param $val
      * @return null|int
      */
-    public function isInt($val): int;
+    public function isInt($val):? int;
 
     /**
      * @param $entity
@@ -156,6 +167,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setOrUseDefault($entity, string $propertyPath, $defaultValue, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -167,6 +179,7 @@ interface ResourceInterface
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setNumeric($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null, bool $isNullAllowed = true);
 
@@ -174,7 +187,7 @@ interface ResourceInterface
      * @param $val
      * @param bool $isNullAllowed
      * @return mixed
-     * @throws \Error
+     * @throws \Throwable
      */
     public function getNumeric($val, bool $isNullAllowed = true);
 
@@ -186,6 +199,7 @@ interface ResourceInterface
      * @param bool|null $forceReturn
      * @param bool $isNullAllowed
      * @return mixed
+     * @throws \Throwable
      */
     public function setDate($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null, bool $isNullAllowed = true);
 
@@ -193,15 +207,15 @@ interface ResourceInterface
      * @param $val
      * @param bool $isNullAllowed
      * @return \DateTime|null
-     * @throws \Error
+     * @throws \Throwable
      */
-    public function getDate($val, $isNullAllowed = true): \DateTime;
+    public function getDate($val, $isNullAllowed = true):? \DateTime;
 
     /**
      * @param $val
      * @return \DateTime|null
      */
-    public function isDateTime($val): \DateTime;
+    public function isDateTime($val):? \DateTime;
 
     /**
      * This gets the current value of the propertyPath and sets its negation.
@@ -210,7 +224,7 @@ interface ResourceInterface
      * @param $entity
      * @param string $propertyPath
      * @return mixed
-     * @throws \Error
+     * @throws \Throwable
      */
     public function setNegation($entity, string $propertyPath);
 
@@ -220,6 +234,7 @@ interface ResourceInterface
      * @param $objectOrArray
      * @param string|null $propertyPathOverwrite
      * @return mixed
+     * @throws \Throwable
      */
     public function setBoolIfObjectOrArrayHas($entity, string $propertyPath, $objectOrArray, string $propertyPathOverwrite = null);
 
@@ -232,6 +247,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setBool($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -253,6 +269,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdownRaw($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -263,6 +280,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdownHTML($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -274,6 +292,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdownShort($entity, string $propertyPath, int $length = null, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -322,6 +341,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object
+     * @throws \Throwable
      */
     public function setOneToOneUnidirectional($owningEntity, string $owningPropertyPath, string $repository, string $owningPropertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -358,6 +378,7 @@ interface ResourceInterface
      * @param object|null $owningEntity $cart
      * @param string $owningSidePropertyPath $cart->customer
      * @return object
+     * @throws \Throwable
      */
     public function inverseSideSetsOneToOneBidirectional($inverseEntity, string $inversePropertyPath, $owningEntity = null, string $owningSidePropertyPath);
 
@@ -391,6 +412,7 @@ interface ResourceInterface
      * @param object|null $inverseEntity
      * @param string $inverseSidePropertyPath $customer->cart
      * @return object
+     * @throws \Throwable
      */
     public function owningSideSetsOneToOneBidirectional($owningEntity, string $owningPropertyPath, $inverseEntity = null, string $inverseSidePropertyPath);
 
@@ -431,7 +453,7 @@ interface ResourceInterface
      * @param object|null $owningEntity $feature
      * @param string $owningSidePropertyPath $feature->product
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function inverseSideAddsOneToManyBidirectional($inverseEntity, string $inverseAdder, string $inverseRemover, $owningEntity = null, string $owningSidePropertyPath);
 
@@ -469,6 +491,7 @@ interface ResourceInterface
      * @param array $owningEntities $features
      * @param string $owningSidePropertyPath $feature->product
      * @return object
+     * @throws \Throwable
      */
     public function inverseSideSetsOneToManyBidirectional($inverseEntity, string $inversePropertyPath, string $inverseRemover, array $owningEntities = [], string $owningSidePropertyPath);
 
@@ -506,6 +529,7 @@ interface ResourceInterface
      * @param string $inverseAdder $product->addFeature()
      * @param string $inverseRemover $product->removeFeature()
      * @return object
+     * @throws \Throwable
      */
     public function owningSideSetsOneToManyBidirectional($owningEntity, string $owningPropertyPath, $inverseEntity = null, string $inverseAdder, string $inverseRemover);
 
@@ -544,7 +568,7 @@ interface ResourceInterface
      * @param string $inverseAdder $user->addPhoneNumber()
      * @param object|null $otherSideEntity $phoneNumber
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function addOneToManyUnidirectional($inverseEntity, string $inverseAdder, $otherSideEntity = null);
 
@@ -583,6 +607,7 @@ interface ResourceInterface
      * @param string $inversePropertyPath $user->phoneNumbers
      * @param array $otherSideEntities $phoneNumbers
      * @return mixed
+     * @throws \Throwable
      */
     public function setOneToManyUnidirectional($inverseEntity, string $inversePropertyPath, array $otherSideEntities);
 
@@ -621,7 +646,7 @@ interface ResourceInterface
      * @param object|null $otherSideEntity $group
      * @param string $otherSideAdder $group->addUser()
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function addManyToManyBidirectional($thisSideEntity, string $thisSideAdder, $otherSideEntity = null, string $otherSideAdder);
 
@@ -662,6 +687,7 @@ interface ResourceInterface
      * @param string $otherSideRemover $group->removeUser()
      * @param string $otherSideAdder $group->addUser()
      * @return object
+     * @throws \Throwable
      */
     public function setManyToManyBidirectional($thisSideEntity, string $thisSidePropertyPath, array $otherSideEntities = [], string $otherSideRemover, string $otherSideAdder);
 
@@ -672,7 +698,7 @@ interface ResourceInterface
      * @param string|null $otherSideRemover $group->removeUser()
      * @param string|null $otherSidePropertyPath $feature->product
      * @return object
-     * @throws \Exception
+     * @throws \Throwable
      */
     public function removeAssociation($thisSideEntity, string $thisSideRemover, $otherSideEntity = null, string $otherSideRemover = null, string $otherSidePropertyPath = null);
 }
