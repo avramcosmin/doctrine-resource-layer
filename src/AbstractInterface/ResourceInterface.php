@@ -1,4 +1,6 @@
-<?php namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
+<?php
+
+namespace Mindlahus\DoctrineResourceLayer\AbstractInterface;
 
 interface ResourceInterface
 {
@@ -14,6 +16,13 @@ interface ResourceInterface
     public function getFromJSON(string $propertyPath, $content = null, bool $forceReturn = null);
 
     /**
+     * @param string $propertyPath
+     * @param string|null $pathOverwritePrefix
+     * @return null|string
+     */
+    public function gluePathOverwritePrefix(string $propertyPath, string $pathOverwritePrefix = null):? string;
+
+    /**
      * @param $entity
      * @param string $propertyPath
      * @param string|null $propertyPathOverwrite
@@ -23,6 +32,14 @@ interface ResourceInterface
      * @throws \Throwable
      */
     public function set($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
+
+    /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @throws \Throwable
+     */
+    public function batchSet(array $propertyPaths, $entity, string $pathOverwritePrefix = null);
 
     /**
      * @param string $propertyPath
@@ -184,6 +201,15 @@ interface ResourceInterface
     public function setNumeric($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null, bool $isNullAllowed = true);
 
     /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function batchSetNumeric(array $propertyPaths, $entity, string $pathOverwritePrefix = null);
+
+    /**
      * @param $val
      * @param bool $isNullAllowed
      * @return mixed
@@ -202,6 +228,15 @@ interface ResourceInterface
      * @throws \Throwable
      */
     public function setDate($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null, bool $isNullAllowed = true);
+
+    /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function batchSetDate(array $propertyPaths, $entity, string $pathOverwritePrefix = null);
 
     /**
      * @param $val
@@ -252,6 +287,14 @@ interface ResourceInterface
     public function setBool($entity, string $propertyPath, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
     /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @throws \Throwable
+     */
+    public function batchSetBool(array $propertyPaths, $entity, string $pathOverwritePrefix = null);
+
+    /**
      * @param $entity
      * @param string $propertyPath
      * @param int|null $length
@@ -259,6 +302,7 @@ interface ResourceInterface
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed
+     * @throws \Throwable
      */
     public function setMarkdown($entity, string $propertyPath, int $length = null, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
@@ -297,30 +341,6 @@ interface ResourceInterface
     public function setMarkdownShort($entity, string $propertyPath, int $length = null, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
     /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-one-unidirectional
-     *
-     * Owning Side, Many-To-One, Unidirectional
-     *
-     * Ex.
-     * User [owning side]
-     * Many Users have One Address.
-     * $user->address [ManyToOne] [targetEntity: Address] [JoinColumn]
-     *
-     * Address [no inverse side]
-     *
-     * $userResource->setOneToOneUnidirectional($user, 'address', AddressRepository, ... )
-     *
-     * @param object $owningEntity $user
-     * @param string $owningPropertyPath $user->address
-     * @param string $repository AddressRepository
-     * @param string $owningPropertyPathOverwrite
-     * @param mixed $content
-     * @param bool|null $forceReturn
-     * @return object
-     */
-    public function setManyToOneUnidirectional($owningEntity, string $owningPropertyPath, string $repository, string $owningPropertyPathOverwrite = null, $content = null, bool $forceReturn = null);
-
-    /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-unidirectional
      *
      * Owning Side, One-To-One, Unidirectional
@@ -344,6 +364,35 @@ interface ResourceInterface
      * @throws \Throwable
      */
     public function setOneToOneUnidirectional($owningEntity, string $owningPropertyPath, string $repository, string $owningPropertyPathOverwrite = null, $content = null, bool $forceReturn = null);
+
+    /**
+     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-one-unidirectional
+     *
+     * Owning Side, Many-To-One, Unidirectional
+     *
+     * Ex.
+     * User [owning side]
+     * Many Users have One Address.
+     * $user->address [ManyToOne] [targetEntity: Address] [JoinColumn]
+     *
+     * Address [no inverse side]
+     *
+     * $userResource->setOneToOneUnidirectional(
+     *                                          $user,
+     *                                          'address',
+     *                                          AddressRepository,
+     *                                          'address.id', ... )
+     *
+     * @param object $owningEntity $user
+     * @param string $owningPropertyPath $user->address
+     * @param string $repository AddressRepository
+     * @param string $owningPropertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @return object
+     * @throws \Throwable
+     */
+    public function setManyToOneUnidirectional($owningEntity, string $owningPropertyPath, string $repository, string $owningPropertyPathOverwrite = null, $content = null, bool $forceReturn = null);
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-bidirectional
@@ -450,12 +499,13 @@ interface ResourceInterface
      * @param object $inverseEntity $product
      * @param string $inverseAdder $product->addFeature()
      * @param string $inverseRemover $product->removeFeature()
-     * @param object|null $owningEntity $feature
+     * @param object $owningEntity $feature
      * @param string $owningSidePropertyPath $feature->product
+     * @param string $instanceOf
      * @return object
      * @throws \Throwable
      */
-    public function inverseSideAddsOneToManyBidirectional($inverseEntity, string $inverseAdder, string $inverseRemover, $owningEntity = null, string $owningSidePropertyPath);
+    public function inverseSideAddsOneToManyBidirectional($inverseEntity, string $inverseAdder, string $inverseRemover, $owningEntity, string $owningSidePropertyPath, string $instanceOf);
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-bidirectional
@@ -566,11 +616,12 @@ interface ResourceInterface
      *
      * @param $inverseEntity $user
      * @param string $inverseAdder $user->addPhoneNumber()
-     * @param object|null $otherSideEntity $phoneNumber
+     * @param object $otherSideEntity $phoneNumber
+     * @param string $instanceOf
      * @return object
      * @throws \Throwable
      */
-    public function addOneToManyUnidirectional($inverseEntity, string $inverseAdder, $otherSideEntity = null);
+    public function addOneToManyUnidirectional($inverseEntity, string $inverseAdder, $otherSideEntity, string $instanceOf);
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-many-unidirectional-with-join-table
@@ -641,14 +692,15 @@ interface ResourceInterface
      *                            $forceReturn
      *                           );
      *
-     * @param $thisSideEntity $user
+     * @param object $thisSideEntity $user
      * @param string $thisSideAdder $user->addGroup()
-     * @param object|null $otherSideEntity $group
+     * @param object $otherSideEntity $group
      * @param string $otherSideAdder $group->addUser()
+     * @param string $instanceOf
      * @return object
      * @throws \Throwable
      */
-    public function addManyToManyBidirectional($thisSideEntity, string $thisSideAdder, $otherSideEntity = null, string $otherSideAdder);
+    public function addManyToManyBidirectional($thisSideEntity, string $thisSideAdder, $otherSideEntity, string $otherSideAdder, string $instanceOf);
 
     /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-many-bidirectional

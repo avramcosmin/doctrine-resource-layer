@@ -37,6 +37,23 @@ abstract class ResourceAbstract
     }
 
     /**
+     * @param string $propertyPath
+     * @param string|null $pathOverwritePrefix
+     * @return null|string
+     */
+    public function gluePathOverwritePrefix(
+        string $propertyPath,
+        string $pathOverwritePrefix = null
+    ):? string
+    {
+        if (null === $pathOverwritePrefix) {
+            return null;
+        }
+
+        return trim('.', $pathOverwritePrefix) . '.' . $propertyPath;
+    }
+
+    /**
      * @param $entity
      * @param string $propertyPath
      * @param string|null $propertyPathOverwrite
@@ -66,13 +83,36 @@ abstract class ResourceAbstract
     }
 
     /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @throws \Throwable
+     */
+    public function batchSet(array $propertyPaths,
+                             $entity,
+                             string $pathOverwritePrefix = null
+    )
+    {
+        foreach ($propertyPaths as $propertyPath) {
+            $this->set(
+                $entity,
+                $propertyPath,
+                $this->gluePathOverwritePrefix(
+                    $propertyPath,
+                    $pathOverwritePrefix
+                )
+            );
+        }
+    }
+
+    /**
      * @param string $propertyPath
      * @param string $repository
      * @param string $col
      * @param string|null $propertyPathOverwrite
      * @param mixed $content
      * @param bool|null $forceReturn
-     * @return object|null
+     * @return mixed|null
      * @throws \Throwable
      */
     public function getOneBy(string $propertyPath,
@@ -100,7 +140,7 @@ abstract class ResourceAbstract
      * @param string|null $propertyPathOverwrite
      * @param mixed $content
      * @param bool|null $forceReturn
-     * @return object|null
+     * @return mixed|null
      * @throws \Throwable
      */
     public function getOneById(string $propertyPath,
@@ -232,7 +272,7 @@ abstract class ResourceAbstract
 
         if (!$val) {
             $this->logger->error('Not float value when trying to get float.');
-            throw new \Error('Expecting float value. ' . $valType . ' given.');
+            throw new \ErrorException('Expecting float value. ' . $valType . ' given.');
         }
 
         return $val;
@@ -304,7 +344,7 @@ abstract class ResourceAbstract
 
         if (!is_numeric($val)) {
             $this->logger->error('Not numeric value when trying to get with decimal.');
-            throw new \Error('Expecting numeric value. ' . strtoupper(gettype($val)) . ' given.');
+            throw new \ErrorException('Expecting numeric value. ' . strtoupper(gettype($val)) . ' given.');
         }
 
         return $this->getFloat(number_format($val, $decimals), $isNullAllowed);
@@ -366,7 +406,7 @@ abstract class ResourceAbstract
 
         if (!$val) {
             $this->logger->error('Not integer value when trying to get integer.');
-            throw new \Error('Expecting integer value. ' . $valType . ' given.');
+            throw new \ErrorException('Expecting integer value. ' . $valType . ' given.');
         }
 
         return $val;
@@ -447,6 +487,32 @@ abstract class ResourceAbstract
     }
 
     /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function batchSetNumeric(array $propertyPaths,
+                                    $entity,
+                                    string $pathOverwritePrefix = null
+    )
+    {
+        foreach ($propertyPaths as $propertyPath) {
+            $this->setNumeric(
+                $entity,
+                $propertyPath,
+                $this->gluePathOverwritePrefix(
+                    $propertyPath,
+                    $pathOverwritePrefix
+                )
+            );
+        }
+
+        return $entity;
+    }
+
+    /**
      * @param $val
      * @param bool $isNullAllowed
      * @return mixed
@@ -462,7 +528,7 @@ abstract class ResourceAbstract
 
         if (!is_numeric($val)) {
             $this->logger->error('Not numeric value when trying to set numeric.');
-            throw new \Error('Expecting numeric value. ' . $valType . ' given.');
+            throw new \ErrorException('Expecting numeric value. ' . $valType . ' given.');
         }
 
         return $val;
@@ -503,6 +569,32 @@ abstract class ResourceAbstract
     }
 
     /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function batchSetDate(array $propertyPaths,
+                                 $entity,
+                                 string $pathOverwritePrefix = null
+    )
+    {
+        foreach ($propertyPaths as $propertyPath) {
+            $this->setDate(
+                $entity,
+                $propertyPath,
+                $this->gluePathOverwritePrefix(
+                    $propertyPath,
+                    $pathOverwritePrefix
+                )
+            );
+        }
+
+        return $entity;
+    }
+
+    /**
      * @param $val
      * @param bool $isNullAllowed
      * @return \DateTime|null
@@ -518,7 +610,7 @@ abstract class ResourceAbstract
 
         if (!$val) {
             $this->logger->error('Not \DateTime() instance when trying to get date.');
-            throw new \Error('Expecting \DateTime() instance. ' . strtoupper(gettype($val)) . ' given.');
+            throw new \ErrorException('Expecting \DateTime() instance. ' . strtoupper(gettype($val)) . ' given.');
         }
 
         return $val;
@@ -548,7 +640,7 @@ abstract class ResourceAbstract
 
         if (!is_bool($val) && $val !== null) {
             $this->logger->error('Negation can only be used on boolean type properties.');
-            throw new \Error('Negation can only be used on boolean type properties.');
+            throw new \ErrorException('Negation can only be used on boolean type properties.');
         }
 
         $this->accessor->setValue(
@@ -621,6 +713,29 @@ abstract class ResourceAbstract
         );
 
         return $entity;
+    }
+
+    /**
+     * @param array $propertyPaths
+     * @param $entity
+     * @param string|null $pathOverwritePrefix
+     * @throws \Throwable
+     */
+    public function batchSetBool(array $propertyPaths,
+                                 $entity,
+                                 string $pathOverwritePrefix = null
+    )
+    {
+        foreach ($propertyPaths as $propertyPath) {
+            $this->setBool(
+                $entity,
+                $propertyPath,
+                $this->gluePathOverwritePrefix(
+                    $propertyPath,
+                    $pathOverwritePrefix
+                )
+            );
+        }
     }
 
     /**
@@ -766,6 +881,57 @@ abstract class ResourceAbstract
     }
 
     /**
+     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-unidirectional
+     *
+     * Owning Side, One-To-One, Unidirectional
+     *
+     * Ex.
+     * Product [owning side]
+     * One Product has One Shipment.
+     * $product->shipment [OneToOne] [targetEntity: Shipment] [JoinColumn]
+     *
+     * Shipment [no inverse side]
+     *
+     * $productResource->setOneToOneUnidirectional($product, 'shipment', ShipmentRepository, ... )
+     *
+     * @param mixed $owningEntity $product
+     * @param string $owningPropertyPath $product->shipment
+     * @param string $repository ShipmentRepository
+     * @param string $owningPropertyPathOverwrite
+     * @param mixed $content
+     * @param bool|null $forceReturn
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function setOneToOneUnidirectional($owningEntity,
+                                              string $owningPropertyPath,
+                                              string $repository,
+                                              string $owningPropertyPathOverwrite = null,
+                                              $content = null,
+                                              bool $forceReturn = null
+    )
+    {
+        if ($content && $content instanceof $repository) {
+            $inverseEntity = $content;
+        } else {
+            $inverseEntity = $this->getOneById(
+                $owningPropertyPathOverwrite ?: $owningPropertyPath,
+                $repository,
+                $content,
+                $forceReturn
+            );
+        }
+        // sets object or null
+        $this->accessor->setValue(
+            $owningEntity,
+            $owningPropertyPath,
+            $inverseEntity
+        );
+
+        return $owningEntity;
+    }
+
+    /**
      * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#many-to-one-unidirectional
      *
      * Owning Side, Many-To-One, Unidirectional
@@ -777,15 +943,19 @@ abstract class ResourceAbstract
      *
      * Address [no inverse side]
      *
-     * $userResource->setOneToOneUnidirectional($user, 'address', AddressRepository, ... )
+     * $userResource->setOneToOneUnidirectional(
+     *                                          $user,
+     *                                          'address',
+     *                                          AddressRepository,
+     *                                          'address.id', ... )
      *
-     * @param object $owningEntity $user
+     * @param mixed $owningEntity $user
      * @param string $owningPropertyPath $user->address
      * @param string $repository AddressRepository
      * @param string $owningPropertyPathOverwrite
      * @param mixed $content
      * @param bool|null $forceReturn
-     * @return object
+     * @return mixed
      * @throws \Throwable
      */
     public function setManyToOneUnidirectional($owningEntity,
@@ -805,52 +975,6 @@ abstract class ResourceAbstract
             $content,
             $forceReturn
         );
-    }
-
-    /**
-     * http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/association-mapping.html#one-to-one-unidirectional
-     *
-     * Owning Side, One-To-One, Unidirectional
-     *
-     * Ex.
-     * Product [owning side]
-     * One Product has One Shipment.
-     * $product->shipment [OneToOne] [targetEntity: Shipment] [JoinColumn]
-     *
-     * Shipment [no inverse side]
-     *
-     * $productResource->setOneToOneUnidirectional($product, 'shipment', ShipmentRepository, ... )
-     *
-     * @param object $owningEntity $product
-     * @param string $owningPropertyPath $product->shipment
-     * @param string $repository ShipmentRepository
-     * @param string $owningPropertyPathOverwrite
-     * @param mixed $content
-     * @param bool|null $forceReturn
-     * @return object
-     * @throws \Throwable
-     */
-    public function setOneToOneUnidirectional($owningEntity,
-                                              string $owningPropertyPath,
-                                              string $repository,
-                                              string $owningPropertyPathOverwrite = null,
-                                              $content = null,
-                                              bool $forceReturn = null
-    )
-    {
-        // sets object or null
-        $this->accessor->setValue(
-            $owningEntity,
-            $owningPropertyPath,
-            $this->getOneById(
-                $owningPropertyPathOverwrite ?: $owningPropertyPath,
-                $repository,
-                $content,
-                $forceReturn
-            )
-        );
-
-        return $owningEntity;
     }
 
     /**
@@ -881,11 +1005,11 @@ abstract class ResourceAbstract
      *                           $forceReturn
      *                          );
      *
-     * @param object $inverseEntity $customer
+     * @param mixed $inverseEntity $customer
      * @param string $inversePropertyPath $customer->cart
-     * @param object|null $owningEntity $cart
+     * @param mixed|null $owningEntity $cart
      * @param string $owningSidePropertyPath $cart->customer
-     * @return object
+     * @return mixed
      * @throws \Throwable
      */
     public function inverseSideSetsOneToOneBidirectional($inverseEntity,
@@ -899,7 +1023,7 @@ abstract class ResourceAbstract
          * Presuming null is allowed (else MySQL will generate an error).
          * Detach the inverse from the old owner.
          *
-         * @var object|null $oldOwningEntity
+         * @var mixed|null $oldOwningEntity
          */
         $oldOwningEntity = $this->getAccessor()->getValue($inverseEntity, $inversePropertyPath);
         if ($oldOwningEntity) {
@@ -911,7 +1035,7 @@ abstract class ResourceAbstract
              * If the new owner has an inverse.
              * Let's make this OLD inverse aware of the changes.
              *
-             * @var object|null $oldInverseEntity
+             * @var mixed|null $oldInverseEntity
              */
             $oldInverseEntity = $this->accessor->getValue($owningEntity, $owningSidePropertyPath);
             if ($oldInverseEntity) {
@@ -959,11 +1083,11 @@ abstract class ResourceAbstract
      *                               $forceReturn
      *                              );
      *
-     * @param object $owningEntity $cart
+     * @param mixed $owningEntity $cart
      * @param string $owningPropertyPath $cart->customer
-     * @param object|null $inverseEntity
+     * @param mixed|null $inverseEntity
      * @param string $inverseSidePropertyPath $customer->cart
-     * @return object
+     * @return mixed
      * @throws \Throwable
      */
     public function owningSideSetsOneToOneBidirectional($owningEntity,
@@ -1024,24 +1148,25 @@ abstract class ResourceAbstract
      *                              $forceReturn
      *                             );
      *
-     * @param object $inverseEntity $product
+     * @param mixed $inverseEntity $product
      * @param string $inverseAdder $product->addFeature()
      * @param string $inverseRemover $product->removeFeature()
-     * @param object|null $owningEntity $feature
+     * @param mixed $owningEntity $feature
      * @param string $owningSidePropertyPath $feature->product
-     * @return object
+     * @param string $instanceOf
+     * @return mixed
      * @throws \Throwable
      */
     public function inverseSideAddsOneToManyBidirectional($inverseEntity,
                                                           string $inverseAdder,
                                                           string $inverseRemover,
-                                                          $owningEntity = null,
-                                                          string $owningSidePropertyPath
+                                                          $owningEntity,
+                                                          string $owningSidePropertyPath,
+                                                          string $instanceOf
     )
     {
-
-        if (!$owningEntity) {
-            throw new \Exception(
+        if (!$owningEntity instanceof $instanceOf) {
+            throw new \ErrorException(
                 'Expecting Owning Entity when adding OneToMany, Bidirectional. None provided.'
             );
         }
@@ -1050,7 +1175,7 @@ abstract class ResourceAbstract
          * If the owner has an inverse.
          * Let's make this OLD inverse aware of the changes.
          *
-         * @var object|null $oldInverseEntity
+         * @var mixed|null $oldInverseEntity
          */
         $oldInverseEntity = $this->accessor->getValue($owningEntity, $owningSidePropertyPath);
         if ($oldInverseEntity) {
@@ -1098,12 +1223,12 @@ abstract class ResourceAbstract
      *                                                  )
      *                               )
      *
-     * @param object $inverseEntity $product
+     * @param mixed $inverseEntity $product
      * @param string $inversePropertyPath $product->features
      * @param string $inverseRemover $product->removeFeature()
      * @param array $owningEntities $features
      * @param string $owningSidePropertyPath $feature->product
-     * @return object
+     * @return mixed
      * @throws \Throwable
      */
     public function inverseSideSetsOneToManyBidirectional($inverseEntity,
@@ -1132,7 +1257,7 @@ abstract class ResourceAbstract
              * If the NEW owners have an inverse.
              * Let's make this OLD inverse aware of the changes.
              *
-             * @var object|null $oldInverseEntity
+             * @var mixed|null $oldInverseEntity
              */
             $oldInverseEntity = $this->getAccessor()->getValue(
                 $owningEntity,
@@ -1191,12 +1316,12 @@ abstract class ResourceAbstract
      *                              $forceReturn
      *                             );
      *
-     * @param object $owningEntity $feature
+     * @param mixed $owningEntity $feature
      * @param string $owningPropertyPath $feature->product
-     * @param object|null $inverseEntity $product
+     * @param mixed|null $inverseEntity $product
      * @param string $inverseAdder $product->addFeature()
      * @param string $inverseRemover $product->removeFeature()
-     * @return object
+     * @return mixed
      * @throws \Throwable
      */
     public function owningSideSetsOneToManyBidirectional($owningEntity,
@@ -1210,7 +1335,7 @@ abstract class ResourceAbstract
          * If the owning entity has an inverse.
          * Let's make this OLD inverse aware of the change.
          *
-         * @var object|null $oldInverseEntity
+         * @var mixed|null $oldInverseEntity
          */
         $oldInverseEntity = $this->getAccessor()->getValue($owningEntity, $owningPropertyPath);
         if ($oldInverseEntity) {
@@ -1261,17 +1386,19 @@ abstract class ResourceAbstract
      *
      * @param $inverseEntity $user
      * @param string $inverseAdder $user->addPhoneNumber()
-     * @param object|null $otherSideEntity $phoneNumber
-     * @return object
+     * @param mixed $otherSideEntity $phoneNumber
+     * @param string $instanceOf
+     * @return mixed
      * @throws \Throwable
      */
     public function addOneToManyUnidirectional($inverseEntity,
                                                string $inverseAdder,
-                                               $otherSideEntity = null
+                                               $otherSideEntity,
+                                               string $instanceOf
     )
     {
-        if ($otherSideEntity) {
-            throw new \Exception(
+        if (!$otherSideEntity instanceof $instanceOf) {
+            throw new \ErrorException(
                 'Expecting Other Side Entity when adding OneToMany, Unidirectional. None provided.'
             );
         }
@@ -1362,21 +1489,23 @@ abstract class ResourceAbstract
      *                            $forceReturn
      *                           );
      *
-     * @param $thisSideEntity $user
+     * @param mixed $thisSideEntity $user
      * @param string $thisSideAdder $user->addGroup()
-     * @param object|null $otherSideEntity $group
+     * @param mixed $otherSideEntity $group
      * @param string $otherSideAdder $group->addUser()
-     * @return object
+     * @param string $instanceOf
+     * @return mixed
      * @throws \Throwable
      */
     public function addManyToManyBidirectional($thisSideEntity,
                                                string $thisSideAdder,
-                                               $otherSideEntity = null,
-                                               string $otherSideAdder
+                                               $otherSideEntity,
+                                               string $otherSideAdder,
+                                               string $instanceOf
     )
     {
-        if ($otherSideEntity) {
-            throw new \Exception(
+        if (!$otherSideEntity instanceof $instanceOf) {
+            throw new \ErrorException(
                 'Expecting Other Side Entity when adding ManyToMany, Bidirectional. None provided.');
         }
 
@@ -1417,12 +1546,12 @@ abstract class ResourceAbstract
      *                                                )
      *                             )
      *
-     * @param object $thisSideEntity $user
+     * @param mixed $thisSideEntity $user
      * @param string $thisSidePropertyPath $user->groups
      * @param array $otherSideEntities $groups
      * @param string $otherSideRemover $group->removeUser()
      * @param string $otherSideAdder $group->addUser()
-     * @return object
+     * @return mixed
      * @throws \Throwable
      */
     public function setManyToManyBidirectional($thisSideEntity,
@@ -1456,12 +1585,12 @@ abstract class ResourceAbstract
     }
 
     /**
-     * @param object $thisSideEntity $user|$product
+     * @param mixed $thisSideEntity $user|$product
      * @param string $thisSideRemover $user->removeGroup()|$product->removeFeature()
-     * @param object|null $otherSideEntity $group|$feature
+     * @param mixed|null $otherSideEntity $group|$feature
      * @param string|null $otherSideRemover $group->removeUser()
      * @param string|null $otherSidePropertyPath $feature->product
-     * @return object
+     * @return mixed
      * @throws \Throwable
      */
     public function removeAssociation($thisSideEntity,
@@ -1472,19 +1601,19 @@ abstract class ResourceAbstract
     )
     {
         if (!$otherSideRemover && !$otherSidePropertyPath) {
-            throw new \Exception(
+            throw new \ErrorException(
                 'Unable to remove. Missing both Other Side Remover and Other Side Property Path'
             );
         }
 
         if ($otherSideRemover && $otherSidePropertyPath) {
-            throw new \Exception(
+            throw new \ErrorException(
                 'Ambiguous operation. There is no way to differentiate between OneToMany and ManyToMany.'
             );
         }
 
         if (!$otherSideEntity) {
-            throw new \Exception('Unable to continue. You have to provide an Other Side Entity. NULL received.');
+            throw new \ErrorException('Unable to continue. You have to provide an Other Side Entity. NULL received.');
         }
 
         // remove the association
