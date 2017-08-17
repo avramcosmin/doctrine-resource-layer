@@ -109,7 +109,6 @@ abstract class ResourceAbstract
      * @param string $propertyPath
      * @param string $repository
      * @param string $col
-     * @param string|null $propertyPathOverwrite
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed|null
@@ -118,7 +117,6 @@ abstract class ResourceAbstract
     public function getOneBy(string $propertyPath,
                              string $repository,
                              string $col,
-                             string $propertyPathOverwrite = null,
                              $content = null,
                              bool $forceReturn = null
     )
@@ -127,7 +125,7 @@ abstract class ResourceAbstract
             ->getRepository($repository)
             ->findOneBy([
                 $col => $this->getFromJSON(
-                    $propertyPathOverwrite ?: $propertyPath,
+                    $propertyPath,
                     $content,
                     $forceReturn
                 )
@@ -137,7 +135,6 @@ abstract class ResourceAbstract
     /**
      * @param string $propertyPath
      * @param string $repository
-     * @param string|null $propertyPathOverwrite
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return mixed|null
@@ -145,7 +142,6 @@ abstract class ResourceAbstract
      */
     public function getOneById(string $propertyPath,
                                string $repository,
-                               string $propertyPathOverwrite = null,
                                $content = null,
                                bool $forceReturn = null
     )
@@ -154,7 +150,6 @@ abstract class ResourceAbstract
             $propertyPath,
             $repository,
             'id',
-            $propertyPathOverwrite,
             $content,
             $forceReturn
         );
@@ -970,8 +965,8 @@ abstract class ResourceAbstract
         return $this->setOneToOneUnidirectional(
             $owningEntity,
             $owningPropertyPath,
-            $owningPropertyPathOverwrite,
             $repository,
+            $owningPropertyPathOverwrite,
             $content,
             $forceReturn
         );
@@ -998,9 +993,8 @@ abstract class ResourceAbstract
      *
      * $customerResource->inverseSideSetsOneToOneBidirectional($customer, 'cart', $cart, 'customer')
      *
-     * $cart = $this->getOneById('cart',
+     * $cart = $this->getOneById('cart.id' ?: 'cart',
      *                           CartRepository,
-     *                           'cart.id',
      *                           $content,
      *                           $forceReturn
      *                          );
@@ -1076,9 +1070,8 @@ abstract class ResourceAbstract
      *
      * $cartResource->owningSideSetsOneToOneBidirectional($cart, 'customer', $customer, 'cart')
      *
-     * $customer = $this->getOneById('customer',
+     * $customer = $this->getOneById('customer.id' ?: 'customer',
      *                               CustomerRepository,
-     *                               'customer.id',
      *                               $content,
      *                               $forceReturn
      *                              );
@@ -1141,9 +1134,8 @@ abstract class ResourceAbstract
      *                                                         'product',
      *                                                        )
      *
-     * $feature = $this->getOneById('feature',
+     * $feature = $this->getOneById('feature.id' ?: 'feature',
      *                              FeatureRepository,
-     *                              'feature.id',
      *                              $content,
      *                              $forceReturn
      *                             );
@@ -1309,9 +1301,8 @@ abstract class ResourceAbstract
      *                                                        'removeFeature'
      *                                                       )
      *
-     * $product = $this->getOneById('product',
+     * $product = $this->getOneById('product.id' ?: 'product',
      *                              ProductRepository,
-     *                              'product.id',
      *                              $content,
      *                              $forceReturn
      *                             );
@@ -1377,9 +1368,8 @@ abstract class ResourceAbstract
      *                                           $phoneNumber
      *                                          )
      *
-     * $phoneNumber = $this->getOneById('phoneNumber',
+     * $phoneNumber = $this->getOneById('phoneNumber.id' ?: 'phoneNumber',
      *                                  PhoneRepository,
-     *                                  'phoneNumber.id',
      *                                  $content,
      *                                  $forceReturn
      *                                 );
@@ -1482,9 +1472,8 @@ abstract class ResourceAbstract
      *                                           'addUser'
      *                                          )
      *
-     * $group = $this->getOneById('group',
+     * $group = $this->getOneById('group.id' ?: 'group',
      *                            GroupRepository,
-     *                            'group.id',
      *                            $content,
      *                            $forceReturn
      *                           );

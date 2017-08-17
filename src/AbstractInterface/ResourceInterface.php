@@ -45,24 +45,22 @@ interface ResourceInterface
      * @param string $propertyPath
      * @param string $repository
      * @param string $col
-     * @param string|null $propertyPathOverwrite
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object|null
      * @throws \Throwable
      */
-    public function getOneBy(string $propertyPath, string $repository, string $col, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
+    public function getOneBy(string $propertyPath, string $repository, string $col, $content = null, bool $forceReturn = null);
 
     /**
      * @param string $propertyPath
      * @param string $repository
-     * @param string|null $propertyPathOverwrite
      * @param mixed $content
      * @param bool|null $forceReturn
      * @return object|null
      * @throws \Throwable
      */
-    public function getOneById(string $propertyPath, string $repository, string $propertyPathOverwrite = null, $content = null, bool $forceReturn = null);
+    public function getOneById(string $propertyPath, string $repository, $content = null, bool $forceReturn = null);
 
     /**
      * @param string $repository
