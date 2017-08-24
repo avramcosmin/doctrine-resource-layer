@@ -760,7 +760,9 @@ abstract class ResourceAbstract
             $forceReturn
         );
         $propertyPath = str_replace('Markdown', 'HTML', $propertyPath);
-        $propertyPathOverwrite = str_replace('Markdown', 'HTML', $propertyPathOverwrite);
+        if ($propertyPathOverwrite) {
+            $propertyPathOverwrite = str_replace('Markdown', 'HTML', $propertyPathOverwrite);
+        }
         $this->setMarkdownHTML(
             $entity,
             $propertyPath,
@@ -768,8 +770,10 @@ abstract class ResourceAbstract
             $content,
             $forceReturn
         );
-        $propertyPath = str_replace('Markdown', 'Short', $propertyPath);
-        $propertyPathOverwrite = str_replace('Markdown', 'Short', $propertyPathOverwrite);
+        $propertyPath = str_replace('HTML', 'Short', $propertyPath);
+        if ($propertyPathOverwrite) {
+            $propertyPathOverwrite = str_replace('HTML', 'Short', $propertyPathOverwrite);
+        }
         $this->setMarkdownShort(
             $entity,
             $propertyPath,
