@@ -50,7 +50,7 @@ abstract class ResourceAbstract
             return null;
         }
 
-        return trim('.', $pathOverwritePrefix) . '.' . $propertyPath;
+        return trim($pathOverwritePrefix, '.') . '.' . $propertyPath;
     }
 
     /**
