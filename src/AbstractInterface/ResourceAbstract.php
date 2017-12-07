@@ -26,7 +26,7 @@ abstract class ResourceAbstract
             return $content;
         }
 
-        if (!is_array($content) && !is_object($content)) {
+        if (!\is_array($content) && !\is_object($content)) {
             $content = $this->getRequestContent();
         }
 
@@ -261,7 +261,7 @@ abstract class ResourceAbstract
             return $val;
         }
 
-        $valType = strtoupper(gettype($val));
+        $valType = strtoupper(\gettype($val));
 
         $val = $this->isFloat($val);
 
@@ -339,7 +339,7 @@ abstract class ResourceAbstract
 
         if (!is_numeric($val)) {
             $this->logger->error('Not numeric value when trying to get with decimal.');
-            throw new \ErrorException('Expecting numeric value. ' . strtoupper(gettype($val)) . ' given.');
+            throw new \ErrorException('Expecting numeric value. ' . strtoupper(\gettype($val)) . ' given.');
         }
 
         return $this->getFloat(number_format($val, $decimals), $isNullAllowed);
@@ -395,7 +395,7 @@ abstract class ResourceAbstract
             return $val;
         }
 
-        $valType = strtoupper(gettype($val));
+        $valType = strtoupper(\gettype($val));
 
         $val = $this->isInt($val);
 
@@ -519,7 +519,7 @@ abstract class ResourceAbstract
             return $val;
         }
 
-        $valType = strtoupper(gettype($val));
+        $valType = strtoupper(\gettype($val));
 
         if (!is_numeric($val)) {
             $this->logger->error('Not numeric value when trying to set numeric.');
@@ -605,7 +605,7 @@ abstract class ResourceAbstract
 
         if (!$val) {
             $this->logger->error('Not \DateTime() instance when trying to get date.');
-            throw new \ErrorException('Expecting \DateTime() instance. ' . strtoupper(gettype($val)) . ' given.');
+            throw new \ErrorException('Expecting \DateTime() instance. ' . strtoupper(\gettype($val)) . ' given.');
         }
 
         return $val;
@@ -633,7 +633,7 @@ abstract class ResourceAbstract
     {
         $val = $this->getAccessor()->getValue($entity, $propertyPath);
 
-        if (!is_bool($val) && $val !== null) {
+        if (!\is_bool($val) && $val !== null) {
             $this->logger->error('Negation can only be used on boolean type properties.');
             throw new \ErrorException('Negation can only be used on boolean type properties.');
         }
